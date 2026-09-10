@@ -1,0 +1,18 @@
+# Explicit project name so containers/volumes never collide with other repos
+# that also run compose from a folder named "backend".
+name: meal-planner
+
+services:
+  db:
+    image: postgres:18-alpine
+    ports:
+      - '${DB_PORT}:5432'
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+    volumes:
+      - dbdata:/var/lib/postgresql
+
+volumes:
+  dbdata:

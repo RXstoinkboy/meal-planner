@@ -1,0 +1,22 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/backend": {
+      "entry": [
+        "adonisrc.ts",
+        "bin/*.ts",
+        "start/*.ts",
+        "tests/bootstrap.ts",
+        "config/*.ts",
+        "providers/*.ts",
+        "database/**/*.ts"
+      ],
+      "ignore": [".adonisjs/**"],
+      "ignoreDependencies": ["pg", "@types/pg", "hot-hook"]
+    },
+    "apps/mobile": {
+      "entry": ["app/**/*.tsx", "tamagui.config.ts"],
+      "ignoreDependencies": ["@legendapp/state"]
+    }
+  }
+}

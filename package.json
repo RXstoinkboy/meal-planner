@@ -1,0 +1,30 @@
+{
+  "name": "meal-planner",
+  "private": true,
+  "packageManager": "npm@11.16.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --ui=tui",
+    "build": "turbo run build",
+    "lint": "turbo run lint",
+    "sast": "semgrep scan --config p/security-audit --config p/typescript --exclude node_modules --exclude .expo --exclude .adonisjs",
+    "type-check": "turbo run type-check",
+    "knip": "knip"
+  },
+  "devDependencies": {
+    "knip": "^6.35.1",
+    "turbo": "^2.10.12"
+  },
+  "allowScripts": {
+    "@swc/core@1.15.47": true,
+    "esbuild@0.27.7": true,
+    "unrs-resolver@1.12.2": true
+  },
+  "overrides": {
+    "@tamagui/core": "^2.7.7",
+    "@tamagui/web": "^2.7.7",
+    "tamagui": "^2.7.7"
+  }
+}
