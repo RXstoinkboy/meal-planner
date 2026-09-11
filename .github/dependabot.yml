@@ -1,0 +1,7 @@
+# Dependency CVE alerts + auto-PRs. Root lockfile covers all workspaces.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
