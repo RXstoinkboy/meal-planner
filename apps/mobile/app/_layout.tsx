@@ -4,16 +4,20 @@ import { StatusBar } from "expo-status-bar";
 import { TamaguiProvider } from "tamagui";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { QueryClient } from "@tanstack/react-query";
 import tamaguiConfig from "@/tamagui.config";
-
-const queryClient = new QueryClient();
+import { queryClient } from "@/lib/client";
+import { hydrateAuth } from "@/state/auth";
+import { useEffect } from "react";
 
 const asyncStoragePersister = createAsyncStoragePersister({
 	storage: AsyncStorage,
 });
 
 export default function RootLayout() {
+	useEffect(() => {
+		hydrateAuth();
+	}, []);
+
 	return (
 		<PersistQueryClientProvider
 			client={queryClient}
