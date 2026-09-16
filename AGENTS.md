@@ -109,6 +109,10 @@ Base path `/api/v1`. Starter-kit auth is wired up:
 - Metro resolves packages hoisted to the repo root; `@tamagui/core`, `@tamagui/web`, `tamagui` are forced to a single copy at the workspace root (root `overrides` pin them together). Keep those in sync when bumping Tamagui.
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`. Branches: `feat/description`, `fix/description`.
 - Don't add dependencies without a good reason — ask first.
+- **Track events for every user action** (implementation requirement, not optional). PostHog via the `lib/analytics` facade (mobile) and `app/services/analytics.ts` (backend) — never import PostHog directly.
+  - Add the event to `apps/mobile/lib/analytics/events.ts` first, then mirror it in `apps/backend/app/services/events.ts` (same name, kept in sync by convention). Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
+  - Mobile: `track(events.<slice>.<event>)` at the user action site. Backend: `track(event, distinctId, props)` where server-side tracking matters.
+  - A PR that adds a user action (button press, signup, save, delete, ...) without a corresponding event is incomplete.
 
 ## Gotchas
 
