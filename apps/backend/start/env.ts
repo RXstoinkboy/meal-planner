@@ -31,4 +31,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   DB_USER: Env.schema.string(),
   DB_PASSWORD: Env.schema.string.optional(),
   DB_DATABASE: Env.schema.string(),
+
+  // PostHog (optional — analytics facade no-ops when unset)
+  POSTHOG_KEY: Env.schema.string.optional(),
+  POSTHOG_HOST: Env.schema.string.optional(),
 })

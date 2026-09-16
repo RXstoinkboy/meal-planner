@@ -3,6 +3,7 @@ import { useObservable } from "@legendapp/state/react";
 import { YStack, Text, Input, Button, Spinner } from "@/components";
 import { useState } from "react";
 import { api } from "@/lib/client";
+import { events, identify, reset, track } from "@/lib/analytics";
 import { auth$, setToken, clearToken } from "@/state/auth";
 
 function fieldErrors(error: unknown): Record<string, string> {
@@ -35,7 +36,10 @@ function AuthView() {
 	const mutation = useMutation(
 		route.mutationOptions({
 			onSuccess: (data) => {
-				if (data.data.token) setToken(data.data.token);
+				if (!data.data.token) return;
+				setToken(data.data.token);
+				track(mode === "login" ? events.auth.loggedIn : events.auth.signedUp);
+				if (data.data.user?.id) identify(String(data.data.user.id));
 			},
 		}),
 	);
@@ -117,7 +121,11 @@ function ProfileView() {
 
 	const logout = useMutation(
 		api.profile.accessTokens.destroy.mutationOptions({
-			onSettled: () => clearToken(),
+			onSettled: () => {
+				clearToken();
+				reset();
+				track(events.auth.loggedOut);
+			},
 		}),
 	);
 
