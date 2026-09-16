@@ -3,11 +3,12 @@ import { createTuyau } from "@tuyau/core/client";
 import { createTuyauReactQueryClient } from "@tuyau/react-query";
 import { registry } from "@meal-planner/backend/registry";
 import { auth$ } from "@/state/auth";
+import { env } from "@/lib/env";
 
 export const queryClient = new QueryClient();
 
 export const client = createTuyau({
-	baseUrl: process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:3333",
+	baseUrl: env.EXPO_PUBLIC_API_URL,
 	registry,
 	headers: { Accept: "application/json" },
 	hooks: {
