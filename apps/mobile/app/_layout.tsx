@@ -8,6 +8,7 @@ import tamaguiConfig from "@/tamagui.config";
 import { queryClient } from "@/lib/client";
 import { hydrateAuth } from "@/state/auth";
 import { useEffect } from "react";
+import "@/lib/i18n";
 
 const asyncStoragePersister = createAsyncStoragePersister({
 	storage: AsyncStorage,

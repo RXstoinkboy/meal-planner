@@ -5,6 +5,7 @@ import { useState } from "react";
 import { api } from "@/lib/client";
 import { events, identify, reset, track } from "@/lib/analytics";
 import { auth$, setToken, clearToken } from "@/state/auth";
+import { useTranslation } from "react-i18next";
 
 function fieldErrors(error: unknown): Record<string, string> {
 	if (error && typeof error === "object" && "isValidationError" in error) {
@@ -22,6 +23,7 @@ function fieldErrors(error: unknown): Record<string, string> {
 }
 
 function AuthView() {
+	const { t } = useTranslation();
 	const [mode, setMode] = useState<"login" | "signup">("login");
 	const [form, setForm] = useState({
 		fullName: "",
@@ -49,19 +51,19 @@ function AuthView() {
 	return (
 		<YStack grow={1} justify="center" p="$5" gap="$4">
 			<Text fontSize="$8" fontWeight="bold">
-				Meal Planner
+				{t("app.name")}
 			</Text>
 
 			{mode === "signup" && (
 				<Input
-					placeholder="Full name"
+					placeholder={t("auth.fullName")}
 					value={form.fullName}
 					onChangeText={(v) => setForm({ ...form, fullName: v })}
 					autoCapitalize="words"
 				/>
 			)}
 			<Input
-				placeholder="Email"
+				placeholder={t("auth.email")}
 				value={form.email}
 				onChangeText={(v) => setForm({ ...form, email: v })}
 				autoCapitalize="none"
@@ -69,14 +71,14 @@ function AuthView() {
 				textContentType="emailAddress"
 			/>
 			<Input
-				placeholder="Password"
+				placeholder={t("auth.password")}
 				value={form.password}
 				onChangeText={(v) => setForm({ ...form, password: v })}
 				secureTextEntry
 			/>
 			{mode === "signup" && (
 				<Input
-					placeholder="Confirm password"
+					placeholder={t("auth.confirmPassword")}
 					value={form.passwordConfirmation}
 					onChangeText={(v) => setForm({ ...form, passwordConfirmation: v })}
 					secureTextEntry
@@ -85,7 +87,7 @@ function AuthView() {
 
 			{mutation.isError && Object.keys(errors).length === 0 && (
 				<Text color="$color.red9">
-					{String(mutation.error?.message ?? "Request failed")}
+					{String(mutation.error?.message ?? t("auth.requestFailed"))}
 				</Text>
 			)}
 			{Object.entries(errors).map(([field, message]) => (
@@ -101,22 +103,25 @@ function AuthView() {
 				{mutation.isPending ? (
 					<Spinner />
 				) : mode === "login" ? (
-					"Log in"
+					t("auth.login")
 				) : (
-					"Sign up"
+					t("auth.signup")
 				)}
 			</Button>
 			<Button
 				chromeless
 				onPress={() => setMode(mode === "login" ? "signup" : "login")}
 			>
-				{mode === "login" ? "No account? Sign up" : "Have an account? Log in"}
+				{mode === "login"
+					? t("auth.noAccountSignup")
+					: t("auth.haveAccountLogin")}
 			</Button>
 		</YStack>
 	);
 }
 
 function ProfileView() {
+	const { t } = useTranslation();
 	const profile = useQuery(api.profile.profile.show.queryOptions());
 
 	const logout = useMutation(
@@ -152,7 +157,7 @@ function ProfileView() {
 				onPress={() => logout.mutate({})}
 				disabled={logout.isPending}
 			>
-				Log out
+				{t("auth.logout")}
 			</Button>
 		</YStack>
 	);

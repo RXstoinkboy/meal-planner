@@ -1,0 +1,17 @@
+{
+	"app": {
+		"name": "Meal Planner"
+	},
+	"auth": {
+		"login": "Log in",
+		"signup": "Sign up",
+		"logout": "Log out",
+		"noAccountSignup": "No account? Sign up",
+		"haveAccountLogin": "Have an account? Log in",
+		"fullName": "Full name",
+		"email": "Email",
+		"password": "Password",
+		"confirmPassword": "Confirm password",
+		"requestFailed": "Request failed"
+	}
+}
