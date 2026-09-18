@@ -40,7 +40,6 @@ function AuthView() {
 			onSuccess: (data) => {
 				if (!data.data.token) return;
 				setToken(data.data.token);
-				track(mode === "login" ? events.auth.loggedIn : events.auth.signedUp);
 				if (data.data.user?.id) identify(String(data.data.user.id));
 			},
 		}),
@@ -97,7 +96,14 @@ function AuthView() {
 			))}
 
 			<Button
-				onPress={() => mutation.mutate({ body: form })}
+				onPress={() => {
+					track(
+						mode === "login"
+							? events.auth.loginButtonClicked
+							: events.auth.signupButtonClicked,
+					);
+					mutation.mutate({ body: form });
+				}}
 				disabled={mutation.isPending}
 			>
 				{mutation.isPending ? (
@@ -129,7 +135,6 @@ function ProfileView() {
 			onSettled: () => {
 				clearToken();
 				reset();
-				track(events.auth.loggedOut);
 			},
 		}),
 	);
@@ -154,7 +159,10 @@ function ProfileView() {
 
 			<Button
 				theme="red"
-				onPress={() => logout.mutate({})}
+				onPress={() => {
+					track(events.auth.logoutButtonClicked);
+					logout.mutate({});
+				}}
 				disabled={logout.isPending}
 			>
 				{t("auth.logout")}

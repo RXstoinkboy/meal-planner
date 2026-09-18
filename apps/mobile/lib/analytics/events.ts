@@ -1,39 +1,43 @@
 /**
- * Event names keyed by vertical slice, mirroring the app structure
- * (app routes / state modules). Naming convention: "{slice}.{event_snake}".
- * Backend mirrors this file in apps/backend/app/services/events.ts.
+ * CLIENT events — fired at the user action site (button press).
+ * Naming: "{slice}.{ui_element}.clicked".
+ *
+ * No server twin for auth yet: the backend tracks nothing for now (see
+ * apps/backend/app/services/events.ts for the server-side template). Add a
+ * server event only when you need the authoritative fact — silent re-login,
+ * token refresh and session expiry never pass through this file.
+ *
+ * If an action ever gains a second trigger (deep link, programmatic), promote
+ * its name from "{slice}.{element}.clicked" to "{slice}.{action}_started" —
+ * element-coupled names lie once the element is no longer the only entry point.
  *
  * Slices can nest; every level exposes `base` and reuses the previous
  * level's base to derive its own:
  *
- *   const authPosts = `${authBase}.posts` as const;
+ *   const authSignup = `${authBase}_signup` as const;
  *   ...
- *   auth: {
- *     base: authBase,                  // "auth"
- *     signedUp: `${authBase}.signed_up`,
- *     posts: {
- *       base: authPosts,               // "auth.posts"
- *       created: `${authPosts}.created`,
- *     },
+ *   signup: {
+ *     base: authSignup,              // "auth_signup"
+ *     buttonClicked: `${authSignup}_button_clicked`,
  *   },
  */
 const authBase = "auth" as const;
 
 export const events = {
-	auth: {
-		base: authBase,
-		signedUp: `${authBase}.signed_up`,
-		loggedIn: `${authBase}.logged_in`,
-		loggedOut: `${authBase}.logged_out`,
-	},
+  auth: {
+    base: authBase,
+    signupButtonClicked: `${authBase}_signup_button_clicked`,
+    loginButtonClicked: `${authBase}_login_button_clicked`,
+    logoutButtonClicked: `${authBase}_logout_button_clicked`,
+  },
 } as const;
 
 type EvenValues<T> = {
-	[K in keyof T]: K extends "base"
-		? never
-		: T[K] extends object
-			? EvenValues<T[K]>
-			: T[K];
+  [K in keyof T]: K extends "base"
+    ? never
+    : T[K] extends object
+      ? EvenValues<T[K]>
+      : T[K];
 }[keyof T];
 
 /** Union of all leaf event names (base strings excluded). */

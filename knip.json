@@ -7,6 +7,7 @@
         "bin/*.ts",
         "start/*.ts",
         "tests/bootstrap.ts",
+        "tests/**/*.ts",
         "config/*.ts",
         "providers/*.ts",
         "database/**/*.ts"

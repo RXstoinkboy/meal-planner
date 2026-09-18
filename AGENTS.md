@@ -110,7 +110,7 @@ Base path `/api/v1`. Starter-kit auth is wired up:
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`. Branches: `feat/description`, `fix/description`.
 - Don't add dependencies without a good reason — ask first.
 - **Track events for every user action** (implementation requirement, not optional). PostHog via the `lib/analytics` facade (mobile) and `app/services/analytics.ts` (backend) — never import PostHog directly.
-  - Add the event to `apps/mobile/lib/analytics/events.ts` first, then mirror it in `apps/backend/app/services/events.ts` (same name, kept in sync by convention). Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
+  - Add the event to `apps/mobile/lib/analytics/events.ts` first, do the same for the backend whenever needed (for example if owner of needed information is backend and frontend it not aware of it) in `apps/backend/app/services/events.ts` (same name convention). Some events should be tracked on the frontend when they are associated with a specific user action, but some events should be tracked on the backend because it is more reliable that such action is completed. Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
   - Mobile: `track(events.<slice>.<event>)` at the user action site. Backend: `track(event, distinctId, props)` where server-side tracking matters.
   - A PR that adds a user action (button press, signup, save, delete, ...) without a corresponding event is incomplete.
 
