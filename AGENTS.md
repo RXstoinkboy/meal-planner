@@ -106,6 +106,7 @@ Base path `/api/v1`. Starter-kit auth is wired up:
 - Mobile imports alias: `@/` → `apps/mobile/` root.
 - Tamagui v2 with `onlyAllowShorthands: true` (from `@tamagui/config/v5`): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Extend `tamagui.config.ts` if you ever need to change this; do not add a themes package unless asked.
 - State split (mirrors fitly): Legend-State for persistent app state (`state/`), TanStack Query for server data (`queries/`), API calls only through TanStack Query.
+- Vertical slices are **lint-enforced** with `eslint-plugin-boundaries` (`boundaries/dependencies`) in both apps' flat ESLint configs — see `.pi/skills/vertical-slices/SKILL.md`. Both configs need `eslint-import-resolver-typescript` + the `import/resolver.typescript` setting: without it `@/features/*` and `#models/*` resolve as external and every boundary rule silently no-ops.
 - Metro resolves packages hoisted to the repo root; `@tamagui/core`, `@tamagui/web`, `tamagui` are forced to a single copy at the workspace root (root `overrides` pin them together). Keep those in sync when bumping Tamagui.
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`. Branches: `feat/description`, `fix/description`.
 - Don't add dependencies without a good reason — ask first.
@@ -118,4 +119,5 @@ Base path `/api/v1`. Starter-kit auth is wired up:
 
 - The backend compose project is explicitly named `meal-planner` (folder name `backend` collides with other repos' compose projects).
 - `apps/backend/.adonisjs/` contains generated API registry types (`#generated/*` imports in routes). It regenerates on `ace` commands but is committed so `turbo type-check` works on fresh clones.
+- Moving controllers under `app/features/` (backend VSA) must be one commit: add the `#features/*` import alias, point `indexEntities({ controllers: ... })` at `app/features`, update `start/routes.ts` (registry keys become nested, e.g. `controllers.auth.NewAccount`) and the `hotHook.boundaries` glob. See the header comment in `apps/backend/eslint.config.js`.
 - Expo pins companion packages to `~57.0.x` — run `npx expo install <pkg>` for Expo libs instead of `npm install`, and check with `npx expo install --check`.

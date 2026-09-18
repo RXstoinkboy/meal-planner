@@ -50,6 +50,8 @@
     "@types/node": "~26.2.0",
     "@types/pg": "^8.23.1",
     "eslint": "^10.9.0",
+    "eslint-import-resolver-typescript": "^3.10.1",
+    "eslint-plugin-boundaries": "^7.2.0",
     "eslint-plugin-security": "^4.0.1",
     "hot-hook": "^1.0.0",
     "pino-pretty": "^13.1.3",
