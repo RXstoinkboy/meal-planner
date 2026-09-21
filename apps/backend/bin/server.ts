@@ -9,6 +9,17 @@
 |
 */
 
+import * as Sentry from '@sentry/node'
+
+import sentryConfig from '#config/sentry'
+
+/**
+ * Must run before `@adonisjs/core` is imported: the SDK auto-instruments the
+ * modules loaded after it, which is what gives us the pg/HTTP breadcrumbs in
+ * error reports.
+ */
+Sentry.init(sentryConfig)
+
 await import('reflect-metadata')
 const { Ignitor, prettyPrintError } = await import('@adonisjs/core')
 
@@ -34,7 +45,11 @@ new Ignitor(APP_ROOT, { importer: IMPORTER })
     app.booting(async () => {
       await import('#start/env')
     })
-    app.listen('SIGTERM', () => app.terminate())
+    app.listen('SIGTERM', async () => {
+      // flush buffered events before the process goes away
+      await Sentry.close(2000)
+      await app.terminate()
+    })
     app.listenIf(app.managedByPm2, 'SIGINT', () => app.terminate())
   })
   .httpServer()

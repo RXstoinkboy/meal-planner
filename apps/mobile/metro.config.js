@@ -1,10 +1,13 @@
 const path = require("path");
-const { getDefaultConfig } = require("expo/metro-config");
+const { getSentryExpoConfig } = require("@sentry/react-native/metro");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
 
-const config = getDefaultConfig(projectRoot);
+// Sentry's wrapper around the Expo default config: adds debug IDs + source map
+// upload hooks and swaps the RN SDK for its web build on web. Everything below
+// is applied on top, unchanged.
+const config = getSentryExpoConfig(projectRoot);
 
 // Required for npm workspaces: let Metro find packages hoisted to repo root.
 config.resolver.nodeModulesPaths = [

@@ -35,4 +35,8 @@ export default await Env.create(new URL('../', import.meta.url), {
   // PostHog (optional — analytics facade no-ops when unset)
   POSTHOG_KEY: Env.schema.string.optional(),
   POSTHOG_HOST: Env.schema.string.optional(),
+
+  // Sentry error monitoring (optional — disabled when unset)
+  SENTRY_DSN: Env.schema.string.optional(),
+  SENTRY_RELEASE: Env.schema.string.optional(),
 })

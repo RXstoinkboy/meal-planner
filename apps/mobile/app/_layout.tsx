@@ -1,4 +1,6 @@
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+// first import: Sentry.init must run before anything else is loaded
+import { wrapWithSentry } from "@/lib/sentry";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { TamaguiProvider } from "tamagui";
@@ -11,25 +13,27 @@ import { useEffect } from "react";
 import "@/lib/i18n";
 
 const asyncStoragePersister = createAsyncStoragePersister({
-	storage: AsyncStorage,
+  storage: AsyncStorage,
 });
 
-export default function RootLayout() {
-	useEffect(() => {
-		hydrateAuth();
-	}, []);
+function RootLayout() {
+  useEffect(() => {
+    hydrateAuth();
+  }, []);
 
-	return (
-		<PersistQueryClientProvider
-			client={queryClient}
-			persistOptions={{ persister: asyncStoragePersister }}
-		>
-			<TamaguiProvider config={tamaguiConfig} defaultTheme="light">
-				<StatusBar style="auto" />
-				<Stack>
-					<Stack.Screen name="index" />
-				</Stack>
-			</TamaguiProvider>
-		</PersistQueryClientProvider>
-	);
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{ persister: asyncStoragePersister }}
+    >
+      <TamaguiProvider config={tamaguiConfig} defaultTheme="light">
+        <StatusBar style="auto" />
+        <Stack>
+          <Stack.Screen name="index" />
+        </Stack>
+      </TamaguiProvider>
+    </PersistQueryClientProvider>
+  );
 }
+
+export default wrapWithSentry(RootLayout);

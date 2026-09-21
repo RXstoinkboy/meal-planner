@@ -38,7 +38,14 @@
           "resizeMode": "contain"
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "replace-me-sentry-org",
+          "project": "replace-me-sentry-project"
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

@@ -114,6 +114,12 @@ Base path `/api/v1`. Starter-kit auth is wired up:
   - Add the event to `apps/mobile/lib/analytics/events.ts` first, do the same for the backend whenever needed (for example if owner of needed information is backend and frontend it not aware of it) in `apps/backend/app/services/events.ts` (same name convention). Some events should be tracked on the frontend when they are associated with a specific user action, but some events should be tracked on the backend because it is more reliable that such action is completed. Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
   - Mobile: `track(events.<slice>.<event>)` at the user action site. Backend: `track(event, distinctId, props)` where server-side tracking matters.
   - A PR that adds a user action (button press, signup, save, delete, ...) without a corresponding event is incomplete.
+- **Error monitoring**: Sentry on both apps, errors only (tracing, replay and log shipping are deliberately off to protect the free tier).
+  - Env: `EXPO_PUBLIC_SENTRY_DSN` (mobile), `SENTRY_DSN` + `SENTRY_RELEASE` (backend, release = commit SHA set by the deploy platform). Unset = SDK disabled, so local dev is silent.
+  - Init lives in `apps/mobile/lib/sentry.ts` and `apps/backend/bin/server.ts` (before `@adonisjs/core` is imported, so instrumentation attaches). Only those modules import the SDK; call `setSentryUser` / the exception handler's `report()` instead.
+  - Backend 4xx (validation/auth/not found) is filtered in `app/exceptions/handler.ts`; `beforeSend`/`beforeBreadcrumb` scrub headers, request bodies, SQL and console output. Keep it that way — meal data is sensitive.
+  - Mobile org/project slugs live in `app.json` (replace the `replace-me-*` placeholders); `SENTRY_AUTH_TOKEN` is an EAS secret only. `metro.config.js` must keep `getSentryExpoConfig` for debug IDs / symbolicated stacks.
+  - Phase 2, deliberately not wired: tracing spans, session replay, Better Stack uptime monitors + status page + on-call (external HTTP probes, zero app code), log shipping via a pino transport in `config/logger.ts`.
 
 ## Gotchas
 

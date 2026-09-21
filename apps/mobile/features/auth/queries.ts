@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/client";
 import { identify, reset } from "@/lib/analytics";
+import { setSentryUser } from "@/lib/sentry";
 import { clearToken, setToken } from "@/state/auth";
 
 /** Auth slice server state. All API calls go through the TanStack Query hooks here. */
@@ -11,7 +12,10 @@ export function useLogin() {
 			onSuccess: (data) => {
 				if (!data.data.token) return;
 				setToken(data.data.token);
-				if (data.data.user?.id) identify(String(data.data.user.id));
+				if (data.data.user?.id) {
+					identify(String(data.data.user.id));
+					setSentryUser(String(data.data.user.id));
+				}
 			},
 		}),
 	);
@@ -23,7 +27,10 @@ export function useSignup() {
 			onSuccess: (data) => {
 				if (!data.data.token) return;
 				setToken(data.data.token);
-				if (data.data.user?.id) identify(String(data.data.user.id));
+				if (data.data.user?.id) {
+					identify(String(data.data.user.id));
+					setSentryUser(String(data.data.user.id));
+				}
 			},
 		}),
 	);
@@ -39,6 +46,7 @@ export function useLogout() {
 			onSettled: () => {
 				clearToken();
 				reset();
+				setSentryUser(null);
 			},
 		}),
 	);

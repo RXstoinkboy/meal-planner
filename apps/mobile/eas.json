@@ -16,7 +16,8 @@
     },
     "production": {
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://replace-me-backend-production"
+        "EXPO_PUBLIC_API_URL": "https://replace-me-backend-production",
+        "EXPO_PUBLIC_SENTRY_DSN": "https://01dd3115c614284de6d87a12741d33ef@o4512112301899776.ingest.de.sentry.io/4512126194548816"
       },
       "autoIncrement": true,
       "android": {
