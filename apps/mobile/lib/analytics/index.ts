@@ -1,7 +1,4 @@
-/**
- * Analytics facade — the only module importing PostHog. Swap PostHog for
- * another provider by rewriting this file; no call sites change.
- */
+/** Analytics facade — only module importing PostHog; swapping providers means rewriting just this file. */
 import { PostHog } from "posthog-react-native";
 import type { Event } from "./events";
 
@@ -12,17 +9,23 @@ export type { Event };
 const key = process.env.EXPO_PUBLIC_POSTHOG_KEY;
 const host = process.env.EXPO_PUBLIC_POSTHOG_HOST;
 
+// shared free-tier PostHog project — tag keeps insights filterable per app
+const APP_TAG = "meal-planner";
+
 export type EventProps = Record<string, string | number | boolean | null>;
 
 let instance: PostHog | undefined;
 
 function client(): PostHog | undefined {
 	if (!key) return undefined;
-	// ponytail: no-op without EXPO_PUBLIC_POSTHOG_KEY — local dev/tests stay clean
-	instance ??= new PostHog(key, {
-		host,
-		captureAppLifecycleEvents: false, // manual capture only
-	});
+	// ponytail: no-op without a key — keeps local dev/tests clean
+	if (!instance) {
+		instance = new PostHog(key, {
+			host,
+			captureAppLifecycleEvents: false, // manual capture only
+		});
+		void instance.register({ app: APP_TAG }); // super property → all events
+	}
 	return instance;
 }
 
