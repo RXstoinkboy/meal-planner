@@ -109,6 +109,11 @@ export default defineConfig({
   hooks: {
     init: [
       indexEntities({
+        controllers: {
+          source: 'app/features',
+          importAlias: '#features',
+          glob: ['**/*_controller.ts'],
+        },
         transformers: { enabled: true },
       }),
       generateRegistry(),

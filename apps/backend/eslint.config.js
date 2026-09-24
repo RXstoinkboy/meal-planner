@@ -12,12 +12,13 @@ import boundaries from 'eslint-plugin-boundaries'
  * package.json `imports` aliases stay unresolved, get flagged as external and every
  * rule below silently no-ops.
  *
- * Migrating controllers into features also requires (do it in one commit):
- *   - `"#features/*": "./app/features/*.js"` in package.json imports
+ * Controller wiring (A1, applied — keep these in sync):
+ *   - `"#features/*": "./app/features/*.js"` in package.json imports, mirrored by the
+ *     tsconfig `paths` entry the eslint resolver reads
  *   - indexEntities() in adonisrc.ts: source `app/features`, importAlias `#features`,
- *     glob covering the feature controllers. Registry keys become nested
- *     (`controllers.auth.NewAccount`), so update start/routes.ts too.
- *   - `hotHook.boundaries` glob for the feature controllers
+ *     glob `**\/*_controller.ts`. Registry keys are nested (`controllers.auth.NewAccount`),
+ *     so start/routes.ts uses the nested form.
+ *   - `hotHook.boundaries` glob covers `app/features/**`
  *
  * Routes reach controllers through the generated lazy registry (`.adonisjs/**`), which is
  * not linted — that edge is intentionally outside these rules.
@@ -56,9 +57,8 @@ const boundariesBlock = {
         default: 'disallow',
         policies: [
           // ponytail: files outside the taxonomy (start/, config/, database/, providers/,
-          // legacy top-level app/controllers/*, .adonisjs/**). Dependencies *to* unknown
-          // files are ignored by the plugin already; only unknown sources need this.
-          // Tighten when the legacy controllers move into app/features/*.
+          // .adonisjs/**). Dependencies *to* unknown files are ignored by the plugin
+          // already; only unknown sources need this.
           {
             from: { element: { isUnknown: true } },
             allow: { to: { element: { isUnknown: false } } },

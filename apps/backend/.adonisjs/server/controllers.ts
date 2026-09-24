@@ -4,7 +4,14 @@
  */
 
 export const controllers = {
-  AccessTokens: () => import('#controllers/access_tokens_controller'),
-  NewAccount: () => import('#controllers/new_account_controller'),
-  Profile: () => import('#controllers/profile_controller'),
+  auth: {
+    AccessTokens: () => import('#features/auth/controllers/access_tokens_controller'),
+    NewAccount: () => import('#features/auth/controllers/new_account_controller'),
+  },
+  profile: {
+    Profile: () => import('#features/profile/controllers/profile_controller'),
+  },
+  recipes: {
+    Recipes: () => import('#features/recipes/controllers/recipes_controller'),
+  },
 }
