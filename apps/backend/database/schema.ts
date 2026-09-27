@@ -43,6 +43,140 @@ export class AuthAccessTokenSchema extends BaseModel {
   declare updatedAt: DateTime | null
 }
 
+export class RecipeIngredientSchema extends BaseModel {
+  static $columns = [
+    'category',
+    'id',
+    'name',
+    'optional',
+    'position',
+    'quantity',
+    'rawText',
+    'recipeId',
+    'unit',
+  ] as const
+  $columns = RecipeIngredientSchema.$columns
+  @column()
+  declare category: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare name: string
+  @column()
+  declare optional: boolean
+  @column()
+  declare position: number
+  @column()
+  declare quantity: string | null
+  @column()
+  declare rawText: string
+  @column()
+  declare recipeId: number
+  @column()
+  declare unit: string | null
+}
+
+export class RecipeSourceSchema extends BaseModel {
+  static $columns = ['addedAt', 'id', 'kind', 'label', 'recipeId', 'url'] as const
+  $columns = RecipeSourceSchema.$columns
+  @column.dateTime()
+  declare addedAt: DateTime
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare kind: any
+  @column()
+  declare label: string | null
+  @column()
+  declare recipeId: number
+  @column()
+  declare url: string
+}
+
+export class RecipeStepSchema extends BaseModel {
+  static $columns = ['durationMinutes', 'id', 'position', 'recipeId', 'text'] as const
+  $columns = RecipeStepSchema.$columns
+  @column()
+  declare durationMinutes: number | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare position: number
+  @column()
+  declare recipeId: number
+  @column()
+  declare text: string
+}
+
+export class RecipeSchema extends BaseModel {
+  static $columns = [
+    'cookMinutes',
+    'createdAt',
+    'cuisine',
+    'deletedAt',
+    'description',
+    'extractionConfidence',
+    'extractionModel',
+    'id',
+    'notes',
+    'prepMinutes',
+    'servings',
+    'sourceFetchedAt',
+    'sourceRawPath',
+    'sourceStale',
+    'sourceType',
+    'sourceUrl',
+    'tags',
+    'title',
+    'tools',
+    'updatedAt',
+    'userId',
+  ] as const
+  $columns = RecipeSchema.$columns
+  @column()
+  declare cookMinutes: number | null
+  @column.dateTime({ autoCreate: true })
+  declare createdAt: DateTime
+  @column()
+  declare cuisine: string | null
+  @column.dateTime()
+  declare deletedAt: DateTime | null
+  @column()
+  declare description: string | null
+  @column()
+  declare extractionConfidence: any | null
+  @column()
+  declare extractionModel: string | null
+  @column({ isPrimary: true })
+  declare id: number
+  @column()
+  declare notes: string | null
+  @column()
+  declare prepMinutes: number | null
+  @column()
+  declare servings: number
+  @column.dateTime()
+  declare sourceFetchedAt: DateTime | null
+  @column()
+  declare sourceRawPath: string | null
+  @column()
+  declare sourceStale: boolean
+  @column()
+  declare sourceType: any
+  @column()
+  declare sourceUrl: string | null
+  @column()
+  declare tags: any
+  @column()
+  declare title: string
+  @column()
+  declare tools: any
+  @column.dateTime({ autoCreate: true, autoUpdate: true })
+  declare updatedAt: DateTime | null
+  @column()
+  declare userId: number
+}
+
 export class UserSchema extends BaseModel {
   static $columns = ['createdAt', 'email', 'fullName', 'id', 'password', 'updatedAt'] as const
   $columns = UserSchema.$columns
