@@ -30,6 +30,36 @@ const routes = {
     tokens: [{"old":"/api/v1/account/logout","type":0,"val":"api","end":""},{"old":"/api/v1/account/logout","type":0,"val":"v1","end":""},{"old":"/api/v1/account/logout","type":0,"val":"account","end":""},{"old":"/api/v1/account/logout","type":0,"val":"logout","end":""}],
     types: placeholder as Registry['profile.access_tokens.destroy']['types'],
   },
+  'recipes.index': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/recipes',
+    tokens: [{"old":"/api/v1/recipes","type":0,"val":"api","end":""},{"old":"/api/v1/recipes","type":0,"val":"v1","end":""},{"old":"/api/v1/recipes","type":0,"val":"recipes","end":""}],
+    types: placeholder as Registry['recipes.index']['types'],
+  },
+  'recipes.show': {
+    methods: ["GET","HEAD"],
+    pattern: '/api/v1/recipes/:id',
+    tokens: [{"old":"/api/v1/recipes/:id","type":0,"val":"api","end":""},{"old":"/api/v1/recipes/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/recipes/:id","type":0,"val":"recipes","end":""},{"old":"/api/v1/recipes/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['recipes.show']['types'],
+  },
+  'recipes.store': {
+    methods: ["POST"],
+    pattern: '/api/v1/recipes',
+    tokens: [{"old":"/api/v1/recipes","type":0,"val":"api","end":""},{"old":"/api/v1/recipes","type":0,"val":"v1","end":""},{"old":"/api/v1/recipes","type":0,"val":"recipes","end":""}],
+    types: placeholder as Registry['recipes.store']['types'],
+  },
+  'recipes.update': {
+    methods: ["PATCH"],
+    pattern: '/api/v1/recipes/:id',
+    tokens: [{"old":"/api/v1/recipes/:id","type":0,"val":"api","end":""},{"old":"/api/v1/recipes/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/recipes/:id","type":0,"val":"recipes","end":""},{"old":"/api/v1/recipes/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['recipes.update']['types'],
+  },
+  'recipes.destroy': {
+    methods: ["DELETE"],
+    pattern: '/api/v1/recipes/:id',
+    tokens: [{"old":"/api/v1/recipes/:id","type":0,"val":"api","end":""},{"old":"/api/v1/recipes/:id","type":0,"val":"v1","end":""},{"old":"/api/v1/recipes/:id","type":0,"val":"recipes","end":""},{"old":"/api/v1/recipes/:id","type":1,"val":"id","end":""}],
+    types: placeholder as Registry['recipes.destroy']['types'],
+  },
 } as const satisfies Record<string, AdonisEndpoint>
 
 export { routes }

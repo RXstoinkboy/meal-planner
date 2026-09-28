@@ -51,6 +51,12 @@ export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
  */
 export const configureSuite: Config['configureSuite'] = (suite) => {
   if (['browser', 'functional', 'e2e'].includes(suite.name)) {
-    return suite.setup(() => testUtils.httpServer().start())
+    // per-test rollback: HTTP tests hit the real connection, the tx keeps rows out of the dev DB
+    const dbTransaction = () => testUtils.db().wrapInGlobalTransaction()
+
+    return suite
+      .setup(() => testUtils.httpServer().start())
+      .onTest((test) => test.setup(dbTransaction))
+      .onGroup((group) => group.each.setup(dbTransaction))
   }
 }

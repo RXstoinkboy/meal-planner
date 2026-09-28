@@ -55,4 +55,64 @@ export interface Registry {
       errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#features/auth/controllers/access_tokens_controller').default['destroy']>>>
     }
   }
+  'recipes.index': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/recipes'
+    types: {
+      body: {}
+      paramsTuple: []
+      params: {}
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['index']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['index']>>>
+    }
+  }
+  'recipes.show': {
+    methods: ["GET","HEAD"]
+    pattern: '/api/v1/recipes/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['show']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['show']>>>
+    }
+  }
+  'recipes.store': {
+    methods: ["POST"]
+    pattern: '/api/v1/recipes'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#features/recipes/validators/recipe').createRecipeValidator)>>
+      paramsTuple: []
+      params: {}
+      query: ExtractQuery<InferInput<(typeof import('#features/recipes/validators/recipe').createRecipeValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['store']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['store']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'recipes.update': {
+    methods: ["PATCH"]
+    pattern: '/api/v1/recipes/:id'
+    types: {
+      body: ExtractBody<InferInput<(typeof import('#features/recipes/validators/recipe').updateRecipeValidator)>>
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: ExtractQuery<InferInput<(typeof import('#features/recipes/validators/recipe').updateRecipeValidator)>>
+      response: ExtractResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['update']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['update']>>> | { status: 422; response: { errors: SimpleError[] } }
+    }
+  }
+  'recipes.destroy': {
+    methods: ["DELETE"]
+    pattern: '/api/v1/recipes/:id'
+    types: {
+      body: {}
+      paramsTuple: [ParamValue]
+      params: { id: ParamValue }
+      query: {}
+      response: ExtractResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['destroy']>>>
+      errorResponse: ExtractErrorResponse<Awaited<ReturnType<import('#features/recipes/controllers/recipes_controller').default['destroy']>>>
+    }
+  }
 }

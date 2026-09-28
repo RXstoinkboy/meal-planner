@@ -33,5 +33,18 @@ router
       .prefix('account')
       .as('profile')
       .use(middleware.auth())
+
+    router
+      .group(() => {
+        router.get('/', [controllers.recipes.Recipes, 'index']).as('index')
+        router.get(':id', [controllers.recipes.Recipes, 'show']).as('show')
+        router.post('/', [controllers.recipes.Recipes, 'store']).as('store')
+        router.patch(':id', [controllers.recipes.Recipes, 'update']).as('update')
+        router.delete(':id', [controllers.recipes.Recipes, 'destroy']).as('destroy')
+      })
+      .where('id', router.matchers.number())
+      .prefix('recipes')
+      .as('recipes')
+      .use(middleware.auth())
   })
   .prefix('/api/v1')
