@@ -4,47 +4,13 @@ import type { HttpContext } from '@adonisjs/core/http'
 import Recipe from '#features/recipes/models/recipe'
 import RecipeTransformer from '#features/recipes/transformers/recipe_transformer'
 import { createRecipeValidator, updateRecipeValidator } from '#features/recipes/validators/recipe'
-
-type IngredientInput = {
-  name: string
-  rawText?: string | null
-  quantity?: number | null
-  unit?: string | null
-  category?: string | null
-  optional?: boolean
-}
-
-type StepInput = {
-  text: string
-  durationMinutes?: number | null
-}
-
-function toDecimalString(quantity: number | null | undefined) {
-  const isMissing = quantity === undefined || quantity === null
-
-  return isMissing ? null : String(quantity)
-}
-
-/** Server-owned values the client may omit: position, rawText fallback, decimal-as-string quantity. */
-function toIngredientRows(ingredients: IngredientInput[]) {
-  return ingredients.map((ingredient, index) => ({
-    name: ingredient.name,
-    rawText: ingredient.rawText ?? ingredient.name,
-    quantity: toDecimalString(ingredient.quantity),
-    unit: ingredient.unit ?? null,
-    category: ingredient.category ?? null,
-    optional: ingredient.optional ?? false,
-    position: index + 1,
-  }))
-}
-
-function toStepRows(steps: StepInput[]) {
-  return steps.map((step, index) => ({
-    text: step.text,
-    durationMinutes: step.durationMinutes ?? null,
-    position: index + 1,
-  }))
-}
+import {
+  toEventProps,
+  toIngredientRows,
+  toStepRows,
+} from '#features/recipes/services/recipe_payload'
+import { events } from '#services/events'
+import { track } from '#services/analytics'
 
 export default class RecipesController {
   async index({ auth, serialize }: HttpContext) {
@@ -93,6 +59,8 @@ export default class RecipesController {
       .where('id', created.id)
       .firstOrFail()
 
+    track(events.recipes.created, user.id, toEventProps(recipe))
+
     return serialize(RecipeTransformer.transform(recipe))
   }
 
@@ -128,6 +96,8 @@ export default class RecipesController {
       .where('id', existing.id)
       .firstOrFail()
 
+    track(events.recipes.updated, user.id, toEventProps(recipe))
+
     return serialize(RecipeTransformer.transform(recipe))
   }
 
@@ -138,6 +108,8 @@ export default class RecipesController {
 
     recipe.deletedAt = DateTime.now()
     await recipe.save()
+
+    track(events.recipes.deleted, user.id, { recipe_id: recipe.id })
 
     return response.noContent()
   }

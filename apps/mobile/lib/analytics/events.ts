@@ -2,10 +2,10 @@
  * CLIENT events — fired at the user action site (button press).
  * Naming: "{slice}.{ui_element}.clicked".
  *
- * No server twin for auth yet: the backend tracks nothing for now (see
- * apps/backend/app/services/events.ts for the server-side template). Add a
- * server event only when you need the authoritative fact — silent re-login,
- * token refresh and session expiry never pass through this file.
+ * Server twins are per-fact, not per-slice: `recipes.*` exists (see
+ * apps/backend/app/services/events.ts), auth has none yet. Add a server event
+ * only when you need the authoritative fact — silent re-login, token refresh
+ * and session expiry never pass through this file.
  *
  * If an action ever gains a second trigger (deep link, programmatic), promote
  * its name from "{slice}.{element}.clicked" to "{slice}.{action}_started" —
@@ -24,20 +24,20 @@
 const authBase = "auth" as const;
 
 export const events = {
-  auth: {
-    base: authBase,
-    signupButtonClicked: `${authBase}_signup_button_clicked`,
-    loginButtonClicked: `${authBase}_login_button_clicked`,
-    logoutButtonClicked: `${authBase}_logout_button_clicked`,
-  },
+	auth: {
+		base: authBase,
+		signupButtonClicked: `${authBase}_signup_button_clicked`,
+		loginButtonClicked: `${authBase}_login_button_clicked`,
+		logoutButtonClicked: `${authBase}_logout_button_clicked`,
+	},
 } as const;
 
 type EvenValues<T> = {
-  [K in keyof T]: K extends "base"
-    ? never
-    : T[K] extends object
-      ? EvenValues<T[K]>
-      : T[K];
+	[K in keyof T]: K extends "base"
+		? never
+		: T[K] extends object
+			? EvenValues<T[K]>
+			: T[K];
 }[keyof T];
 
 /** Union of all leaf event names (base strings excluded). */

@@ -14,8 +14,8 @@ function leafNames(node: Record<string, unknown>): string[] {
 
 test.group('Analytics facade', () => {
   test('no-ops (does not throw) when POSTHOG_KEY is unset', async ({ assert }) => {
-    assert.doesNotThrows(() => track(events.auth.signedUp, 'user-1', { plan: 'free' }))
-    assert.doesNotThrows(() => track('unknown.event', 42))
+    assert.doesNotThrow(() => track(events.auth.signedUp, 'user-1', { plan: 'free' }))
+    assert.doesNotThrow(() => track('unknown.event', 42))
     assert.equal(await shutdownAnalytics(), undefined)
   })
 
@@ -28,5 +28,6 @@ test.group('Analytics facade', () => {
 
   test('leaf names start with their slice base', ({ assert }) => {
     assert.equal(events.auth.signedUp, `${events.auth.base}.signed_up`)
+    assert.equal(events.recipes.created, `${events.recipes.base}.created`)
   })
 })
