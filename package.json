@@ -9,8 +9,9 @@
     "dev": "turbo run dev --ui=tui",
     "build": "turbo run build",
     "lint": "turbo run lint",
-    "sast": "semgrep scan --config p/security-audit --config p/typescript --exclude node_modules --exclude .expo --exclude .adonisjs",
+    "sast": "semgrep scan --config p/security-audit --config p/typescript --exclude node_modules --exclude .expo --exclude src/generated",
     "type-check": "turbo run type-check",
+    "test": "turbo run test",
     "knip": "knip"
   },
   "devDependencies": {
@@ -18,9 +19,12 @@
     "turbo": "^2.10.12"
   },
   "allowScripts": {
+    "@prisma/engines@7.10.0": true,
+    "@scarf/scarf@1.4.0": true,
     "@sentry/cli@2.58.4": true,
-    "@swc/core@1.15.47": true,
-    "esbuild@0.27.7": true,
+    "@swc/core@1.16.18": true,
+    "esbuild@0.28.2": true,
+    "prisma@7.10.0": true,
     "unrs-resolver@1.12.2": true
   },
   "overrides": {

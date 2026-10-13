@@ -1,53 +1,63 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { api } from "@/lib/client";
+
+import { api, queryClient } from "@/lib/api/client";
 import { identify, reset } from "@/lib/analytics";
 import { setSentryUser } from "@/lib/sentry";
-import { clearToken, setToken } from "@/state/auth";
+import { clearUser, setUser } from "@/state/auth";
+
+export type UserResponse = { id: number; fullName: string | null; email: string; initials: string };
+
+export type AuthForm = {
+	email: string;
+	fullName: string;
+	password: string;
+	passwordConfirmation: string;
+};
 
 /** Auth slice server state. All API calls go through the TanStack Query hooks here. */
 
-export function useLogin() {
-	return useMutation(
-		api.auth.accessTokens.store.mutationOptions({
-			onSuccess: (data) => {
-				if (!data.data.token) return;
-				setToken(data.data.token);
-				if (data.data.user?.id) {
-					identify(String(data.data.user.id));
-					setSentryUser(String(data.data.user.id));
-				}
-			},
-		}),
-	);
+function persistUser(user: UserResponse) {
+	// drop anything cached for the previous identity before switching
+	queryClient.clear();
+	setUser({ userId: user.id, email: user.email, fullName: user.fullName });
+	identify(String(user.id));
+	setSentryUser(String(user.id));
 }
 
 export function useSignup() {
-	return useMutation(
-		api.auth.newAccount.store.mutationOptions({
-			onSuccess: (data) => {
-				if (!data.data.token) return;
-				setToken(data.data.token);
-				if (data.data.user?.id) {
-					identify(String(data.data.user.id));
-					setSentryUser(String(data.data.user.id));
-				}
-			},
-		}),
-	);
+	return useMutation({
+		mutationFn: (form: AuthForm) =>
+			api<UserResponse>("/api/v1/auth/signup", { method: "POST", body: form }),
+		onSuccess: persistUser,
+	});
+}
+
+export function useLogin() {
+	return useMutation({
+		mutationFn: (form: AuthForm) =>
+			api<UserResponse>("/api/v1/auth/login", {
+				method: "POST",
+				body: { email: form.email, password: form.password },
+			}),
+		onSuccess: persistUser,
+	});
 }
 
 export function useProfile() {
-	return useQuery(api.profile.profile.show.queryOptions());
+	return useQuery({
+		queryKey: ["profile"],
+		queryFn: () => api<UserResponse>("/api/v1/account/profile"),
+	});
 }
 
+/** There are no tokens to revoke — logging out is local state only. */
 export function useLogout() {
-	return useMutation(
-		api.profile.accessTokens.destroy.mutationOptions({
-			onSettled: () => {
-				clearToken();
-				reset();
-				setSentryUser(null);
-			},
-		}),
-	);
+	return useMutation({
+		mutationFn: async () => {
+			clearUser();
+			queryClient.clear();
+			reset();
+			setSentryUser(null);
+		},
+	});
 }
