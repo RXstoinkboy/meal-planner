@@ -46,8 +46,9 @@ After lifting a gate: bump the version, then `npx turbo run type-check lint` and
 │       │   ├── app.module.ts        # module wiring + global pipe/filter/guard
 │       │   ├── common/              # shared: database (Prisma), http, zod, identity, analytics, sentry, health
 │       │   ├── config/              # env (zod), logger (pino), swagger, app setup
-│       │   ├── openapi/             # shared registry for the generated document
-│       │   └── features/<slice>/    # controllers/, services/, validators/, mappers/, openapi.ts, <slice>.module.ts
+│       │   ├── common/              # shared: database (Prisma), http, zod, identity, analytics, sentry, health, swagger
+│       │   ├── config/              # env (zod), logger (pino), swagger, app setup
+│       │   └── features/<slice>/    # controllers/, services/, validators/, mappers/, <slice>.module.ts
 │       ├── prisma/                  # schema.prisma + migrations (baseline)
 │       ├── test/                    # vitest: *.e2e.spec.ts, unit/, helpers.ts, setup-db.ts
 │       ├── docker-compose.yml       # PostgreSQL 18 (project name: meal-planner, host port 5433)
@@ -119,10 +120,14 @@ Replacing that seam is the whole change when Nest passport or Keycloak lands.
 Success bodies are the bare resource (no envelope). Failures are stock Nest bodies
 `{ statusCode, message, error }`: 400 validation with `message` as `[{ field, message }]`
 so forms can map inline errors, 401 missing/unknown identity, 404 not found, 409 duplicate
-email (thrown at the service). The OpenAPI document stays zod-driven (`zod-to-openapi`
-registry, served at `/docs`); nestjs-zod is still out — its 5.5.0 peers cap `@nestjs/common`
-at `^10 || ^11` and its nullable OpenAPI rendering is broken on zod 4. Keep the hand-rolled
-`createZodDto` + pipe; revisit when the nestjs-zod gate lifts.
+email (thrown at the service).
+
+OpenAPI follows the Nest docs' Standard Schema support: route params take the zod schema
+directly (`@Body({ schema })`), validation is the built-in `StandardSchemaValidationPipe`
+(with a custom `exceptionFactory` that keeps `[{field, message}]` for the mobile form), and
+documentation is generated at runtime by `SwaggerModule.createDocument` (`@ApiOkResponse`
+et al. on handlers; `asSwaggerSchema` bridges zod objects past the dated `SchemaObject`
+types). No registry, no committed openapi.json
 
 ## Key Conventions
 
@@ -149,7 +154,7 @@ at `^10 || ^11` and its nullable OpenAPI rendering is broken on zod 4. Keep the 
 - The backend compose project is explicitly named `meal-planner` (folder name `backend` collides with other repos' compose projects) and publishes on host port **5433** — a local Supabase stack from another project already owns 5432. `DATABASE_URL` and `DB_PORT` must agree.
 - `apps/backend/src/generated/prisma` is gitignored and produced by `postinstall` (`prisma generate`). Never edit it; re-run `npm install` (or `npx prisma generate`) after changing `prisma/schema.prisma`.
 - Prisma reads connection config from `prisma7.config.ts`, not from the datasource block. `npx prisma` resolves the workspace-local 7.10.0 — never let it fall back to the registry `latest` (an 8.0.0-rc).
-- Adding a backend slice = `src/features/<name>/` with controllers/services/validators/mappers + a module that imports `./openapi` (that is what registers its paths in the shared registry) + an entry in `app.module.ts`. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
+- Adding a backend slice = `src/features/<name>/` with controllers/services/validators/mappers + a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, `x-user-id` via `@ApiSecurity`. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
 - Backend tests truncate `users` (cascades) before each test and refuse to run unless `DATABASE_URL` points at a `*_test` database. The test database is created by `docker/init-test-db.sh` on the first compose init — after migrating from the Adonis setup, run `docker compose down -v` once.
 - Expo pins companion packages to `~57.0.x` — run `npx expo install <pkg>` for Expo libs instead of `npm install`, and check with `npx expo install --check`.
-- The migration that produced this backend is documented in `docs/migration-p0-findings.md` (why `zod-to-openapi` instead of `nestjs-zod`, plus the version traps).
+- The migration that produced this backend is documented in `docs/migration-p0-findings.md` (why zod stayed, plus the version traps).

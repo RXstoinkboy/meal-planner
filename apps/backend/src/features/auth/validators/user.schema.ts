@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-import { createZodDto } from '@/common/zod/zod-dto'
 import { nullableString } from '@/common/zod/nullable-string'
 
 const email = () => z.string().trim().email().max(254)
@@ -21,5 +20,5 @@ export const loginSchema = z.object({
   password: password(),
 })
 
-export class SignupDto extends createZodDto(signupSchema) {}
-export class LoginDto extends createZodDto(loginSchema) {}
+export type SignupPayload = z.infer<typeof signupSchema>
+export type LoginPayload = z.infer<typeof loginSchema>

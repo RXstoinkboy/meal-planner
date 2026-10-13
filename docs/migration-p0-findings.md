@@ -49,3 +49,16 @@ Same round dropped the Adonis-era wire contract: no `{ data }` envelope, no `{ e
 shape, and no committed openapi.json / generated mobile types. Responses are bare resources,
 failures are stock Nest bodies (`{ statusCode, message, error }`, 400 validation messages as
 `[{ field, message }]`), and `/docs` is runtime-only.
+
+## Follow-up: the fallback was replaced a day later — the gate became moot
+
+`docs.nestjs.com/openapi/introduction#standard-schema-zod-valibot` describes Standard Schema
+route-param support that already ships in this stack (verified live on core/common 12.1.3,
+@nestjs/swagger 12.0.2, zod 4.6.7): `@Body({ schema })` carries the zod schema in param
+metadata, the built-in `StandardSchemaValidationPipe` validates it, zod ≥4.2's
+`~standard.jsonSchema` powers native document conversion, and `@ApiOkResponse({ schema })`
+handles responses with the `output` variant. Te result: the hand-rolled `createZodDto`,
+the custom `ZodValidationPipe` and the `zod-to-openapi` registry are all deleted; a custom
+`exceptionFactory` on the built-in pipe keeps the `[{ field, message }]` 400 body the mobile
+form parses; `asSwaggerSchema` bridges zod objects past @nestjs/swagger's dated
+`SchemaObject` types.

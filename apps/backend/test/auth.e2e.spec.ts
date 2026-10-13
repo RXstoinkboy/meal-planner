@@ -71,9 +71,9 @@ describe('auth', () => {
       error: 'Bad Request',
       message: [{ field: 'email' }],
     })
-    expect(
-      typeof (response.body as { message: { message: unknown }[] }).message[0]?.message
-    ).toBe('string')
+    expect(typeof (response.body as { message: { message: unknown }[] }).message[0]?.message).toBe(
+      'string'
+    )
   })
 
   it('logs in an existing user and rejects an unknown email', async () => {

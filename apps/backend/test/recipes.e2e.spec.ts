@@ -113,7 +113,7 @@ describe('recipes', () => {
     expect(invalid.body).toEqual({
       statusCode: 400,
       error: 'Bad Request',
-      message: [{ field: 'userId', message: 'The "userId" field is not allowed' }],
+      message: [{ message: 'Unrecognized key: "userId"' }],
     })
 
     const emptyPatch = await request(httpServer(app))

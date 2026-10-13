@@ -1,6 +1,5 @@
 import { z } from 'zod'
 
-import { createZodDto } from '@/common/zod/zod-dto'
 import { nullableString } from '@/common/zod/nullable-string'
 
 /** Rule reported for an update payload with no fields; reused by specs. */
@@ -59,6 +58,3 @@ export const updateRecipeSchema = z
 
 export type CreateRecipeInput = z.infer<typeof createRecipeSchema>
 export type UpdateRecipeInput = z.infer<typeof updateRecipeSchema>
-
-export class CreateRecipeDto extends createZodDto(createRecipeSchema) {}
-export class UpdateRecipeDto extends createZodDto(updateRecipeSchema) {}

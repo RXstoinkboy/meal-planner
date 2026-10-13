@@ -40,7 +40,9 @@ function hasRule(errors: IssueView[], rule: string) {
 }
 
 function hasUnknownKey(errors: IssueView[], key: string) {
-  return errors.some((error) => error.code === 'unrecognized_keys' && error.message.includes(`"${key}"`))
+  return errors.some(
+    (error) => error.code === 'unrecognized_keys' && error.message.includes(`"${key}"`)
+  )
 }
 
 describe('recipe schema', () => {

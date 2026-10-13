@@ -13,9 +13,10 @@ import { PrismaModule } from '@/common/database/prisma.module'
 import { HealthModule } from '@/common/health/health.module'
 import { HttpExceptionFilter } from '@/common/http/http-exception.filter'
 import { SentryShutdownService } from '@/common/sentry/sentry-shutdown.service'
-import { ZodValidationPipe } from '@/common/zod/zod-validation.pipe'
+import { fieldExceptionFactory } from '@/common/zod/field-exception-factory'
 import { AuthModule } from '@/features/auth/auth.module'
 import { RecipesModule } from '@/features/recipes/recipes.module'
+import { StandardSchemaValidationPipe } from '@nestjs/common/pipes/standard-schema-validation.pipe'
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { RecipesModule } from '@/features/recipes/recipes.module'
   controllers: [AppController],
   providers: [
     SentryShutdownService,
-    { provide: APP_PIPE, useClass: ZodValidationPipe },
+    { provide: APP_PIPE, useFactory: () => new StandardSchemaValidationPipe({ exceptionFactory: fieldExceptionFactory }) },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
