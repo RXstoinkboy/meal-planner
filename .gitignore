@@ -9,6 +9,9 @@ node_modules/
 # Turborepo
 .turbo/
 
+# Test caches
+.vitest/
+
 # macOS
 .DS_Store
 *.pem
@@ -51,4 +54,4 @@ apps/mobile/.env
 
 # ── apps/backend ─────────────────────────────────
 apps/backend/.env
-apps/backend/build/
+apps/backend/dist/

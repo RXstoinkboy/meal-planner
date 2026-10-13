@@ -6,13 +6,21 @@ services:
   db:
     image: postgres:18-alpine
     ports:
-      - '${DB_PORT}:5432'
+      - '${DB_PORT:-5433}:5432'
     environment:
-      POSTGRES_USER: ${DB_USER}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_USER: ${DB_USER:-meal_planner}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-meal_planner}
+      POSTGRES_DB: ${DB_DATABASE:-meal_planner}
     volumes:
       - dbdata:/var/lib/postgresql
+      # Only runs on a fresh volume: `docker compose down -v` once after
+      # migrating, so the test database below exists.
+      - ./docker/init-test-db.sh:/docker-entrypoint-initdb.d/10-test-db.sh:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-meal_planner}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   dbdata:

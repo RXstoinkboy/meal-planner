@@ -34,7 +34,8 @@ export function fieldErrors(error: unknown): Record<string, string> {
 
 	return Object.fromEntries(
 		message.flatMap((entry) => {
-			const isFieldEntry = entry && typeof entry === "object" && "field" in entry;
+			const isFieldEntry =
+				entry && typeof entry === "object" && "field" in entry;
 			if (!isFieldEntry) return [];
 
 			const field = (entry as { field?: unknown }).field;

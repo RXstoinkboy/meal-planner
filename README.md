@@ -7,7 +7,7 @@ Turborepo monorepo for the Meal Planner app.
 ```text
 apps/
   mobile/    — Expo (React Native + web) app
-  backend/   — AdonisJS API server
+  backend/   — NestJS API server (Prisma + PostgreSQL)
 ```
 
 ## Prerequisites
@@ -25,7 +25,7 @@ apps/
 # Install all dependencies from the root
 npm install
 
-# Configure the backend (APP_KEY, DB_* etc.)
+# Configure the backend (DATABASE_URL, DB_* for compose, PORT)
 cp apps/backend/.env.example apps/backend/.env
 
 # Configure the mobile client (API base URL; use LAN IP for physical devices)
@@ -36,8 +36,9 @@ The backend's `npm run dev` starts the PostgreSQL container via Docker Compose a
 
 ```sh
 cd apps/backend
-npm run db                 # start PostgreSQL container
-npm run ace migration:run  # apply migrations
+npm run db                 # start PostgreSQL container (host port 5433)
+npm run db:migrate         # apply migrations (prisma migrate dev)
+npm test                   # vitest suite against meal_planner_test
 ```
 
 See `AGENTS.md` for stack details and conventions.

@@ -16,7 +16,7 @@ export function ProfileView() {
 		);
 	}
 
-	const user = profile.data?.data;
+	const user = profile.data;
 
 	return (
 		<YStack grow={1} justify="center" items="center" gap="$4" p="$5">
@@ -30,7 +30,7 @@ export function ProfileView() {
 				theme="red"
 				onPress={() => {
 					track(events.auth.logoutButtonClicked);
-					logout.mutate({});
+					logout.mutate();
 				}}
 				disabled={logout.isPending}
 			>

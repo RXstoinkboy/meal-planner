@@ -1,23 +1,9 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { YStack, Text, Input, Button, Spinner } from "@/components";
+import { fieldErrors } from "@/lib/api/error";
 import { events, track } from "@/lib/analytics";
 import { useLogin, useSignup } from "@/features/auth/queries";
-
-function fieldErrors(error: unknown): Record<string, string> {
-	if (error && typeof error === "object" && "isValidationError" in error) {
-		const e = error as {
-			isValidationError(): boolean;
-			response?: { errors?: { field: string; message: string }[] };
-		};
-		if (e.isValidationError() && e.response?.errors) {
-			return Object.fromEntries(
-				e.response.errors.map((err) => [err.field, err.message]),
-			);
-		}
-	}
-	return {};
-}
 
 export function AuthView() {
 	const { t } = useTranslation();
@@ -89,7 +75,7 @@ export function AuthView() {
 							? events.auth.loginButtonClicked
 							: events.auth.signupButtonClicked,
 					);
-					mutation.mutate({ body: form });
+					mutation.mutate(form);
 				}}
 				disabled={mutation.isPending}
 			>

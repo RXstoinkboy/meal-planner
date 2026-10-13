@@ -1,0 +1,123 @@
+// Meal Planner schema. Ported 1:1 from the Adonis/Lucid migrations — including
+// the native enum type names and varchar widths — so the baseline migration
+// reproduces the existing database instead of redesigning it.
+generator client {
+  provider            = "prisma-client"
+  output              = "../src/generated/prisma"
+  moduleFormat        = "cjs"
+  importFileExtension = "js"
+  runtime             = "nodejs"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum RecipeSourceType {
+  manual
+  link
+  image
+  pdf
+  suggestion
+
+  @@map("recipe_source_type")
+}
+
+enum RecipeSourceKind {
+  link
+  video
+  book
+
+  @@map("recipe_source_kind")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  fullName  String?  @map("full_name") @db.VarChar(255)
+  email     String   @unique @db.VarChar(254)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  recipes Recipe[]
+
+  @@map("users")
+}
+
+model Recipe {
+  id          Int     @id @default(autoincrement())
+  userId      Int     @map("user_id")
+  title       String  @db.VarChar(255)
+  description String?
+  servings    Int
+  prepMinutes Int?    @map("prep_minutes")
+  cookMinutes Int?    @map("cook_minutes")
+  cuisine     String? @db.VarChar(255)
+  tags        String[] @default([])
+  tools       String[] @default([])
+  notes       String?
+
+  sourceType           RecipeSourceType @default(manual) @map("source_type")
+  sourceUrl            String?          @map("source_url") @db.VarChar(255)
+  sourceRawPath        String?          @map("source_raw_path") @db.VarChar(255)
+  sourceFetchedAt      DateTime?        @map("source_fetched_at") @db.Timestamp(6)
+  extractionModel      String?          @map("extraction_model") @db.VarChar(255)
+  extractionConfidence Json?            @map("extraction_confidence")
+  sourceStale          Boolean          @default(false) @map("source_stale")
+
+  createdAt DateTime  @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt DateTime  @updatedAt @map("updated_at") @db.Timestamp(6)
+  deletedAt DateTime? @map("deleted_at") @db.Timestamp(6)
+
+  user        User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ingredients RecipeIngredient[]
+  steps       RecipeStep[]
+  sources     RecipeSource[]
+
+  @@index([userId])
+  @@index([tags], type: Gin, map: "recipes_tags_gin")
+  @@map("recipes")
+}
+
+model RecipeIngredient {
+  id        Int     @id @default(autoincrement())
+  recipeId  Int     @map("recipe_id")
+  position  Int
+  rawText   String  @map("raw_text") @db.VarChar(255)
+  name      String  @db.VarChar(255)
+  quantity  Decimal? @db.Decimal(8, 2)
+  unit      String? @db.VarChar(255)
+  category  String? @db.VarChar(255)
+  optional  Boolean @default(false)
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@map("recipe_ingredients")
+}
+
+model RecipeStep {
+  id              Int     @id @default(autoincrement())
+  recipeId        Int     @map("recipe_id")
+  position        Int
+  text            String
+  durationMinutes Int?    @map("duration_minutes")
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@map("recipe_steps")
+}
+
+model RecipeSource {
+  id       Int              @id @default(autoincrement())
+  recipeId Int              @map("recipe_id")
+  url      String           @db.VarChar(255)
+  kind     RecipeSourceKind
+  label    String?          @db.VarChar(255)
+  addedAt  DateTime         @default(now()) @map("added_at") @db.Timestamp(6)
+
+  recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
+
+  @@index([recipeId])
+  @@map("recipe_sources")
+}

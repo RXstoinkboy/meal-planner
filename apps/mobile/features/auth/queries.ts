@@ -5,7 +5,12 @@ import { identify, reset } from "@/lib/analytics";
 import { setSentryUser } from "@/lib/sentry";
 import { clearUser, setUser } from "@/state/auth";
 
-export type UserResponse = { id: number; fullName: string | null; email: string; initials: string };
+export type UserResponse = {
+	id: number;
+	fullName: string | null;
+	email: string;
+	initials: string;
+};
 
 export type AuthForm = {
 	email: string;

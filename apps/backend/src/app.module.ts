@@ -34,7 +34,11 @@ import { StandardSchemaValidationPipe } from '@nestjs/common/pipes/standard-sche
   controllers: [AppController],
   providers: [
     SentryShutdownService,
-    { provide: APP_PIPE, useFactory: () => new StandardSchemaValidationPipe({ exceptionFactory: fieldExceptionFactory }) },
+    {
+      provide: APP_PIPE,
+      useFactory: () =>
+        new StandardSchemaValidationPipe({ exceptionFactory: fieldExceptionFactory }),
+    },
     { provide: APP_FILTER, useClass: HttpExceptionFilter },
     { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],

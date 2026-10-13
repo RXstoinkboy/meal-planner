@@ -1,23 +1,28 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "ignoreBinaries": [
+    "semgrep"
+  ],
   "workspaces": {
     "apps/backend": {
       "entry": [
-        "adonisrc.ts",
-        "bin/*.ts",
-        "start/*.ts",
-        "tests/bootstrap.ts",
-        "tests/**/*.ts",
-        "config/*.ts",
-        "providers/*.ts",
-        "database/**/*.ts"
+        "src/main.ts",
+        "src/app.module.ts",
+        "scripts/*.ts",
+        "test/**/*.ts",
+        "prisma7.config.ts"
       ],
-      "ignore": [".adonisjs/**"],
-      "ignoreDependencies": ["pg", "@types/pg", "hot-hook"]
+      "ignoreDependencies": [
+        "@prisma/client",
+        "pg",
+        "pino-pretty"
+      ]
     },
     "apps/mobile": {
-      "entry": ["app/**/*.tsx", "tamagui.config.ts"],
-      "ignoreDependencies": ["@legendapp/state"]
+      "entry": [
+        "app/**/*.tsx",
+        "tamagui.config.ts"
+      ]
     }
   }
 }

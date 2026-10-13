@@ -1,10 +1,23 @@
 {
-  "extends": "@adonisjs/tsconfig/tsconfig.app.json",
   "compilerOptions": {
-    "rootDir": "./",
-    "outDir": "./build",
+    "module": "commonjs",
+    "target": "ES2023",
+    "declaration": false,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "sourceMap": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "strictPropertyInitialization": false,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
     "paths": {
-      "#features/*": ["./app/features/*"]
+      "@/*": ["./src/*"]
     }
-  }
+  },
+  "include": ["src/**/*", "test/**/*", "scripts/**/*", "prisma7.config.ts"],
+  "exclude": ["node_modules", "dist"]
 }

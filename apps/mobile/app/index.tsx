@@ -4,7 +4,7 @@ import { AuthView } from "@/features/auth/components/auth_view";
 import { ProfileView } from "@/features/auth/components/profile_view";
 
 export default function Index() {
-	const token = useSelector(auth$.token);
+	const user = useSelector(auth$.user);
 
-	return token ? <ProfileView /> : <AuthView />;
+	return user ? <ProfileView /> : <AuthView />;
 }

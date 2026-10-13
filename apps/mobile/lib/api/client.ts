@@ -15,7 +15,10 @@ type RequestOptions = {
  * Plain-URL fetch wrapper; responses are bare bodies (no envelope). Non-2xx throws
  * ApiError so TanStack Query rejects.
  */
-export async function api<T = unknown>(path: string, options: RequestOptions = {}): Promise<T> {
+export async function api<T = unknown>(
+	path: string,
+	options: RequestOptions = {},
+): Promise<T> {
 	const { method = "GET", body } = options;
 	const user = auth$.user.peek();
 
