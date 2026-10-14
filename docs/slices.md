@@ -18,41 +18,39 @@ it is not a slice.
 src/
   features/
     recipes/                       owns: recipes, recipe_ingredients, recipe_steps, recipe_sources
-      controllers/  services/  validators/  mappers/  openapi.ts  recipes.module.ts
-    auth/                          owns: users
-      controllers/ (auth, account)  services/  validators/  mappers/  openapi.ts  auth.module.ts
+      recipes.module.ts  recipes.controller.ts  recipes.service.ts  recipe.schema.ts  recipe.mapper.ts
+    auth/                          owns: users — per-process dirs (signup, login, account)
+      auth.module.ts  user.mapper.ts  # shared response contract
+      signup/  login/  account/       # each: <process>.controller.ts + .service.ts + .schema.ts
     import/                        owns: nothing (stateless extraction)
-      services/  controllers/  validators/
+      import.module.ts  <import>.controller.ts  <process>.service.ts  import.schema.ts
     meal-plan/                     owns: meal_plans, meal_plan_slots
-      services/  controllers/  validators/
     shopping/                      owns: shopping_lists, shopping_items
-      services/  controllers/
     discovery/                     owns: nothing (search + handoff to import)
-      services/  controllers/
     profile/                       owns: user_preferences
-      services/  controllers/  validators/
     feedback/                      owns: meal_slot_feedback, user_recipe_preferences
-      services/  controllers/
-  common/
+  core/                             developer-domain infra, grouped by concern
     database/  http/  zod/  identity/  analytics/  sentry/  health/
-  config/    env.ts  logger.ts  swagger.ts  app.setup.ts
-  openapi/   registry.ts (shared components)  envelope.ts
+    config/    env.ts  logger.ts  app.setup.ts
+    swagger/   swagger.ts (docs endpoint)  swagger-schema.ts (responseOptions helper)
   app.module.ts  app.controller.ts  main.ts  instrument.ts
 ```
 
-There is no `models/` folder: the schema lives in `prisma/schema.prisma`, the generated client in
+Feature folders stay flat — no `controllers/services/...` subfolders; large domains split into
+per-process service files (the auth model), never into nested dirs. There is no `models/` folder:
+the schema lives in `prisma/schema.prisma`, the generated client in
 `src/generated/prisma` (gitignored). The cross-slice surface is a slice's **service** (and its
 **module**, for DI wiring) — models are gone, mappers stay slice-private.
 
-Each slice registers its own OpenAPI paths from `<slice>/openapi.ts`, imported by its module; the
-document is generated after the module graph loads (`npm run openapi`).
+OpenAPI documentation is generated at runtime by `SwaggerModule.createDocument` (zod schemas feed
+both validation and `@Api*Response`) — there is no per-slice registry and no committed artifact.
 
 ### Ownership & surfaces
 
 | slice | owns (tables) | exposes cross-slice | consumes |
 | --- | --- | --- | --- |
 | `recipes` | `recipes`, `recipe_ingredients`, `recipe_steps`, `recipe_sources` | `services/recipes.service` | — |
-| `auth` | `users` | `services/users.service` | — |
+| `auth` | `users` | the auth services (`signup`, `login`, `account`) | — |
 | `import` | — | `services/extract_link`, `services/extract_image`, `services/normalize_recipe` | `services/llm`, `recipes/services/ingredient_normalizer` |
 | `meal-plan` | `meal_plans`, `meal_plan_slots` | `services/meal_plans.service` | `recipes/services/recipes.service`, `profile/services/user_preferences.service`, `feedback/services/score`, `services/llm` |
 | `shopping` | `shopping_lists`, `shopping_items` | `services/shopping_lists.service` | `meal-plan/services/*`, `recipes/services/*`, `recipes/services/ingredient_normalizer` |
@@ -162,13 +160,13 @@ import { ExtractLinkService } from '@/features/import/services/extract_link.serv
 ```
 
 ```ts
-// src/features/shopping/services/derive_shopping_list.ts
-import { MealPlansService } from '@/features/meal-plan/services/meal_plans.service'
+// src/features/shopping/derive_shopping_list.service.ts
+import { MealPlansService } from '@/features/meal-plan/meal_plans.service'
 ```
 
-Controllers, validators and mappers of another feature are **not** importable
+Controllers, schemas and mappers of another feature are **not** importable
 (the allow rule names `categories: ['service', 'module']` only, so a feature's
-`controllers/`, `validators/`, `mappers/` are blocked by omission).
+`*.controller.ts`, `*.schema.ts`, `*.mapper.ts` are blocked by omission).
 
 ### 3.2 Mobile: the route file is the composition point — verified allowed
 
@@ -274,7 +272,7 @@ Three items. Only #1 and #3 have real value; #2 is optional.
 ### 8.1 Doc bug — `app/shared/` does not exist (done)
 
 `.pi/skills/vertical-slices/SKILL.md` no longer suggests an `app/shared/` folder. The enforced
-config has no such element: shared code is `src/common` + `src/config` + `src/openapi`, and the
+config has no such element: shared code is `src/core`, and the
 cross-feature surface is a slice's service (§3.1).
 
 ### 8.2 Mapper category is explicit (done)

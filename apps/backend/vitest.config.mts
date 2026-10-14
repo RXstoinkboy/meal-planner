@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     env: { NODE_ENV: 'test' },
-    include: ['test/**/*.spec.ts'],
+    include: ['test/**/*.e2e-spec.ts', 'src/**/*.spec.ts'],
     setupFiles: ['test/setup-db.ts'],
     // one database, so files must not run their truncations concurrently
     fileParallelism: false,

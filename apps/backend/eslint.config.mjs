@@ -1,11 +1,11 @@
 /**
- * Vertical slice boundaries, Nest edition. A feature lives in `src/features/<domain>/` with
- * its own controllers/services/validators/mappers and its own module. Features may use shared
- * code (`src/common`, `src/config`) and read another feature through its module and services
- * only — never its controller, validator or mapper. Shared code must never depend on a feature.
+ * Vertical slice boundaries, Nest edition. A feature lives in `src/features/<domain>/` as flat
+ * files (controller, per-process services, zod schema, mapper) plus its module. Features may use
+ * shared code (`src/core`) and read another feature through its module and services only —
+ * never its controller, schema or mapper. Shared code must never depend on a feature.
  *
- * Files outside the taxonomy (`src/main.ts`, `src/app.module.ts`, `src/openapi`, `scripts/`,
- * `test/`, `prisma7.config.ts`) are exempt: dependencies they participate in are not checked.
+ * Files outside the taxonomy (`src/main.ts`, `src/app.module.ts`, `scripts/`, `test/`,
+ * `prisma7.config.ts`) are exempt: dependencies they participate in are not checked.
  * That is the deliberate seam where the OpenAPI document and module wiring live.
  *
  * The `typescript` resolver is required: without it the `@/*` alias stays unresolved, the
@@ -36,14 +36,13 @@ const boundariesBlock = {
       typescript: { project: './tsconfig.json' },
     },
     // Element patterns match folders; partialMatch: false anchors them at the
-    // package root so a nested `services/` inside a feature is not mistaken for
-    // shared code. Order matters: the specific patterns must win over the `src`
+    // package root. Order matters: the specific patterns must win over the `src`
     // catch-all that holds the entry files.
     'boundaries/elements': [
       { type: 'feature', pattern: 'src/features/*', capture: ['domain'], partialMatch: false },
       {
         type: 'shared',
-        pattern: ['src/common', 'src/config', 'src/openapi', 'src/generated'],
+        pattern: ['src/core', 'src/generated'],
         partialMatch: false,
       },
       { type: 'test', pattern: 'test', partialMatch: false },
@@ -52,10 +51,10 @@ const boundariesBlock = {
     'boundaries/files': [
       { category: 'test', pattern: '**/*.spec.ts' },
       { category: 'module', pattern: '**/*.module.ts' },
-      { category: 'controller', pattern: '**/controllers/**' },
-      { category: 'service', pattern: '**/services/**' },
-      { category: 'validator', pattern: '**/validators/**' },
-      { category: 'mapper', pattern: '**/mappers/**' },
+      { category: 'controller', pattern: '**/*.controller.ts' },
+      { category: 'service', pattern: '**/*.service.ts' },
+      { category: 'validator', pattern: '**/*.schema.ts' },
+      { category: 'mapper', pattern: '**/*.mapper.ts' },
     ],
   },
   rules: {

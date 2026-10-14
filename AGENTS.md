@@ -44,11 +44,8 @@ After lifting a gate: bump the version, then `npx turbo run type-check lint` and
 │       │   ├── main.ts              # bootstrap: helmet, CORS, versioning, throttler, swagger, shutdown
 │       │   ├── instrument.ts        # Sentry.init — imported first by main.ts
 │       │   ├── app.module.ts        # module wiring + global pipe/filter/guard
-│       │   ├── common/              # shared: database (Prisma), http, zod, identity, analytics, sentry, health
-│       │   ├── config/              # env (zod), logger (pino), swagger, app setup
-│       │   ├── common/              # shared: database (Prisma), http, zod, identity, analytics, sentry, health, swagger
-│       │   ├── config/              # env (zod), logger (pino), swagger, app setup
-│       │   └── features/<slice>/    # controllers/, services/, validators/, mappers/, <slice>.module.ts
+│       │   ├── core/                # developer-domain infra: database (Prisma), config (env, logger), http, identity, analytics, sentry, health, zod, swagger
+│       │   └── features/<slice>/    # flat files: <slice>.controller.ts, per-process services, <slice>.schema.ts, <slice>.mapper.ts, <slice>.module.ts — big domains nest per-process dirs (auth: signup/, login/, account/), unit specs beside their subjects, e2e in test/
 │       ├── prisma/                  # schema.prisma + migrations (baseline)
 │       ├── test/                    # vitest: *.e2e.spec.ts, unit/, helpers.ts, setup-db.ts
 │       ├── docker-compose.yml       # PostgreSQL 18 (project name: meal-planner, host port 5433)
@@ -103,7 +100,7 @@ npm test                   # vitest (needs meal_planner_test, created by compose
 ## API
 
 Base path `/api/v1`. **There is no authentication yet**: every protected route identifies the
-caller with an `x-user-id` header, resolved by one decorator (`src/common/identity/current-user.decorator.ts`).
+caller with an `x-user-id` header, resolved by one decorator (`src/core/identity/current-user.decorator.ts`).
 Replacing that seam is the whole change when Nest passport or Keycloak lands.
 
 | Method | Path | Description |
@@ -139,22 +136,22 @@ types). No registry, no committed openapi.json
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`. Branches: `feat/description`, `fix/description`.
 - Don't add dependencies without a good reason — ask first.
 - **Track events for every user action** (implementation requirement, not optional). PostHog via the `lib/analytics` facade (mobile) and `AnalyticsService` (backend) — never import PostHog directly.
-  - Add the event to `apps/mobile/lib/analytics/events.ts` first, do the same for the backend whenever needed (for example if owner of needed information is backend and frontend it not aware of it) in `apps/backend/src/common/analytics/events.ts` (same name convention). Some events should be tracked on the frontend when they are associated with a specific user action, but some events should be tracked on the backend because it is more reliable that such action is completed. Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
+  - Add the event to `apps/mobile/lib/analytics/events.ts` first, do the same for the backend whenever needed (for example if owner of needed information is backend and frontend it not aware of it) in `apps/backend/src/core/analytics/events.ts` (same name convention). Some events should be tracked on the frontend when they are associated with a specific user action, but some events should be tracked on the backend because it is more reliable that such action is completed. Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
   - Mobile: `track(events.<slice>.<event>)` at the user action site. Backend: `analytics.track(event, distinctId, props)` where server-side tracking matters.
   - A PR that adds a user action (button press, signup, save, delete, ...) without a corresponding event is incomplete.
 - **Error monitoring**: Sentry on both apps, errors only (tracing, replay and log shipping are deliberately off to protect the free tier).
   - Env: `EXPO_PUBLIC_SENTRY_DSN` (mobile), `SENTRY_DSN` + `SENTRY_RELEASE` (backend, release = commit SHA set by the deploy platform). Unset = SDK disabled, so local dev is silent.
   - Init lives in `apps/mobile/lib/sentry.ts` and `apps/backend/src/instrument.ts` (imported first by `main.ts`, so instrumentation attaches). Only those modules import the SDK; call `setSentryUser` / let the exception filter report instead.
-  - Backend 4xx (validation/auth/not found) is filtered in `src/common/http/http-exception.filter.ts`; `beforeSend`/`beforeBreadcrumb` in `src/common/sentry/scrubbers.ts` scrub headers, request bodies, SQL and console output. Keep it that way — meal data is sensitive.
+  - Backend 4xx (validation/auth/not found) is filtered in `src/core/http/http-exception.filter.ts`; `beforeSend`/`beforeBreadcrumb` in `src/core/sentry/scrubbers.ts` scrub headers, request bodies, SQL and console output. Keep it that way — meal data is sensitive.
   - Mobile org/project slugs live in `app.json` (replace the `replace-me-*` placeholders); `SENTRY_AUTH_TOKEN` is an EAS secret only. `metro.config.js` must keep `getSentryExpoConfig` for debug IDs / symbolicated stacks.
-  - Phase 2, deliberately not wired: tracing spans, session replay, Better Stack uptime monitors + status page + on-call (external HTTP probes, zero app code), log shipping via a pino transport in `src/config/logger.ts`.
+  - Phase 2, deliberately not wired: tracing spans, session replay, Better Stack uptime monitors + status page + on-call (external HTTP probes, zero app code), log shipping via a pino transport in `src/core/config/logger.ts`.
 
 ## Gotchas
 
 - The backend compose project is explicitly named `meal-planner` (folder name `backend` collides with other repos' compose projects) and publishes on host port **5433** — a local Supabase stack from another project already owns 5432. `DATABASE_URL` and `DB_PORT` must agree.
 - `apps/backend/src/generated/prisma` is gitignored and produced by `postinstall` (`prisma generate`). Never edit it; re-run `npm install` (or `npx prisma generate`) after changing `prisma/schema.prisma`.
 - Prisma reads connection config from `prisma7.config.ts`, not from the datasource block. `npx prisma` resolves the workspace-local 7.10.0 — never let it fall back to the registry `latest` (an 8.0.0-rc).
-- Adding a backend slice = `src/features/<name>/` with controllers/services/validators/mappers + a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, `x-user-id` via `@ApiSecurity`. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
+- Adding a backend slice = `src/features/<name>/` with flat files — `<name>.controller.ts`, one `<process>.service.ts` per process, `<name>.schema.ts` (request), `<name>.mapper.ts` (response) — plus a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, `x-user-id` via `@ApiSecurity`. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
 - Backend tests truncate `users` (cascades) before each test and refuse to run unless `DATABASE_URL` points at a `*_test` database. The test database is created by `docker/init-test-db.sh` on the first compose init — after migrating from the Adonis setup, run `docker compose down -v` once.
 - Expo pins companion packages to `~57.0.x` — run `npx expo install <pkg>` for Expo libs instead of `npm install`, and check with `npx expo install --check`.
 - The migration that produced this backend is documented in `docs/migration-p0-findings.md` (why zod stayed, plus the version traps).

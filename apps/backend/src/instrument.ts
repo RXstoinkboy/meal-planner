@@ -1,12 +1,12 @@
 import * as Sentry from '@sentry/nestjs'
 
-import { env } from '@/config/env'
+import { env } from '@/core/config/env'
 import {
   isClientException,
   scrubBreadcrumb,
   scrubEvent,
   sentryEnabled,
-} from '@/common/sentry/scrubbers'
+} from '@/core/sentry/scrubbers'
 
 Sentry.init({
   dsn: env.SENTRY_DSN,

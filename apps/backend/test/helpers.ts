@@ -4,7 +4,7 @@ import request from 'supertest'
 import type { App } from 'supertest/types'
 
 import { AppModule } from '@/app.module'
-import { configureApp } from '@/config/app.setup'
+import { configureApp } from '@/core/config/app.setup'
 
 /** Nest types `getHttpServer()` as `any`; supertest wants its own `App`. */
 export function httpServer(app: INestApplication): App {

@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common'
 
-import { RecipesController } from '@/features/recipes/controllers/recipes.controller'
-import { RecipesService } from '@/features/recipes/services/recipes.service'
+import { RecipesController } from '@/features/recipes/recipes.controller'
+import { RecipesService } from '@/features/recipes/recipes.service'
 
 @Module({
   controllers: [RecipesController],

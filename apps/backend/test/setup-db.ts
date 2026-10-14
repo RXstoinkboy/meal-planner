@@ -1,7 +1,7 @@
 import { PrismaPg } from '@prisma/adapter-pg'
 import { afterAll, beforeEach } from 'vitest'
 
-import { env } from '@/config/env'
+import { env } from '@/core/config/env'
 import { PrismaClient } from '@/generated/prisma/client'
 
 function databaseNameOf(databaseUrl: string): string {
