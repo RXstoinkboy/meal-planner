@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { YStack, Text, Button, Spinner } from "@/components";
 import { events, track } from "@/lib/analytics";
-import { useLogout, useProfile } from "@/features/auth/queries";
+import { useLogout, useProfile } from "@/features/auth/api";
 
 export function ProfileView() {
 	const { t } = useTranslation();

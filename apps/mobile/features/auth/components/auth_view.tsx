@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import { YStack, Text, Input, Button, Spinner } from "@/components";
 import { fieldErrors } from "@/lib/api/error";
 import { events, track } from "@/lib/analytics";
-import { useLogin, useSignup } from "@/features/auth/queries";
+import { useLogin, useSignup, type AuthForm } from "@/features/auth/api";
 
 export function AuthView() {
 	const { t } = useTranslation();
 	const [mode, setMode] = useState<"login" | "signup">("login");
-	const [form, setForm] = useState({
+	const [form, setForm] = useState<AuthForm>({
 		fullName: "",
 		email: "",
 		password: "",
