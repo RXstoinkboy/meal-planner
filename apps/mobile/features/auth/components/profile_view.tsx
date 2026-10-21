@@ -19,12 +19,12 @@ export function ProfileView() {
 	const user = profile.data;
 
 	return (
-		<YStack grow={1} justify="center" items="center" gap="$4" p="$5">
-			<Text fontSize="$8" fontWeight="bold">
+		<YStack grow={1} justify="center" items="center" gap="4" p="5">
+			<Text fontSize="8" fontWeight="bold">
 				{user?.initials ?? "…"}
 			</Text>
-			<Text fontSize="$6">{user?.fullName ?? user?.email}</Text>
-			<Text color="$color.gray9">{user?.email}</Text>
+			<Text fontSize="6">{user?.fullName ?? user?.email}</Text>
+			<Text color="gray9">{user?.email}</Text>
 
 			<Button
 				theme="red"

@@ -21,8 +21,8 @@ export function AuthView() {
 	const errors = fieldErrors(mutation.error);
 
 	return (
-		<YStack grow={1} justify="center" p="$5" gap="$4">
-			<Text fontSize="$8" fontWeight="bold">
+		<YStack grow={1} justify="center" p="5" gap="4">
+			<Text fontSize="8" fontWeight="bold">
 				{t("app.name")}
 			</Text>
 
@@ -58,12 +58,12 @@ export function AuthView() {
 			)}
 
 			{mutation.isError && Object.keys(errors).length === 0 && (
-				<Text color="$color.red9">
+				<Text color="red9">
 					{String(mutation.error?.message ?? t("auth.requestFailed"))}
 				</Text>
 			)}
 			{Object.entries(errors).map(([field, message]) => (
-				<Text key={field} color="$color.red9">
+				<Text key={field} color="red9">
 					{message}
 				</Text>
 			))}
@@ -88,7 +88,7 @@ export function AuthView() {
 				)}
 			</Button>
 			<Button
-				chromeless
+				variant="quiet"
 				onPress={() => setMode(mode === "login" ? "signup" : "login")}
 			>
 				{mode === "login"

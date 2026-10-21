@@ -28,8 +28,8 @@
     "unrs-resolver@1.12.2": true
   },
   "overrides": {
-    "@tamagui/core": "^2.7.7",
-    "@tamagui/web": "^2.7.7",
-    "tamagui": "^2.7.7"
+    "@tamagui/core": "^3.1.2",
+    "@tamagui/web": "^3.1.2",
+    "tamagui": "^3.1.2"
   }
 }
