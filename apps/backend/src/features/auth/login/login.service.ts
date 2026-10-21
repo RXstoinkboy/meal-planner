@@ -1,19 +1,32 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common'
+import { Injectable } from '@nestjs/common'
+import { PasswordHasher } from '@nestjs/authentication'
 
 import { PrismaService } from '@/core/database/prisma.service'
 
-/** Login process: email lookup only — no passwords yet, so an unknown email is the sole failure. */
+/** Password sign-in: one answer for every failure, with an upgrade path for old hashes. */
 @Injectable()
 export class LoginService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly passwordHasher: PasswordHasher
+  ) {}
 
-  async login(email: string) {
+  async verify(email: string, password: string) {
     const user = await this.prisma.user.findUnique({ where: { email } })
+    const isValid = await this.passwordHasher.verify(password, user?.passwordHash)
 
-    if (!user) {
-      throw new UnauthorizedException('Invalid credentials')
+    if (!user || !isValid) {
+      return null
     }
 
-    return user
+    if (user.passwordHash && this.passwordHasher.needsRehash(user.passwordHash)) {
+      const passwordHash = await this.passwordHasher.hash(password)
+
+      await this.prisma.user.update({ where: { id: user.id }, data: { passwordHash } })
+    }
+
+    const { passwordHash: _passwordHash, ...authenticated } = user
+
+    return authenticated
   }
 }

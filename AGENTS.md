@@ -93,21 +93,25 @@ npm test                   # vitest (needs meal_planner_test, created by compose
 
 ### Env vars
 
-- `apps/backend`: copy `.env.example` → `.env` (`DATABASE_URL` for Prisma, `DB_*` for compose, `PORT`). Never commit secrets.
+- `apps/backend`: copy `.env.example` → `.env` (`DATABASE_URL` for Prisma, `DB_*` for compose, `PORT`, `JWT_SECRET` — `openssl rand -hex 32`, boot fails without it; `JWT_EXPIRES_IN`/`REFRESH_EXPIRES_IN` optional). Never commit secrets.
 - The dev database listens on **5433** because a local Supabase stack from another project owns 5432.
 - `apps/mobile`: copy `.env.example` → `.env` — `EXPO_PUBLIC_API_URL` (use LAN IP like `http://192.168.1.x:3333` for physical devices). All client env vars must be prefixed `EXPO_PUBLIC_`.
 
 ## API
 
-Base path `/api/v1`. **There is no authentication yet**: every protected route identifies the
-caller with an `x-user-id` header, resolved by one decorator (`src/core/identity/current-user.decorator.ts`).
-Replacing that seam is the whole change when Nest passport or Keycloak lands.
+Base path `/api/v1`. Auth is `@nestjs/authentication` (see Key Conventions): a short-lived HS256
+access JWT (default `15m`) sent as `Authorization: Bearer`, plus an opaque single-use refresh
+token (default `30d`) rotated by `POST /auth/refresh`. Both global guards deny by default: every
+route needs `@Public()` (health, root, auth endpoints) or `@Can.Anyone()` / `@Can(Policy, ...)`.
+Identity reaches handlers through the package's `@CurrentUser('id')` — a plain `number`.
 
 | Method | Path | Description |
 | -------- | ------ | ------------- |
-| POST | `/api/v1/auth/signup` | Create a user (201, 409 duplicate email). Password fields are accepted and ignored |
-| POST | `/api/v1/auth/login` | Look up a user by email (200) |
-| GET | `/api/v1/account/profile` | Current user, from `x-user-id` |
+| POST | `/api/v1/auth/signup` | Create a user and sign in — `{ accessToken, refreshToken, user }` (201, 409 duplicate email) |
+| POST | `/api/v1/auth/login` | Password sign-in, same session body (200, 401 `Invalid credentials`) |
+| POST | `/api/v1/auth/refresh` | Rotate the pair; a reused token → 401 and the whole family is revoked |
+| POST | `/api/v1/auth/logout` | Revoke the refresh-token family (204; unknown tokens ignored) |
+| GET | `/api/v1/account/profile` | Current user, from the Bearer token |
 | GET/POST | `/api/v1/recipes` | List (200) / create (201) |
 | GET/PATCH/DELETE | `/api/v1/recipes/:id` | Read / patch / soft delete (204) |
 | GET | `/health` | Uptime probe, plain body |
@@ -116,8 +120,9 @@ Replacing that seam is the whole change when Nest passport or Keycloak lands.
 
 Success bodies are the bare resource (no envelope). Failures are stock Nest bodies
 `{ statusCode, message, error }`: 400 validation with `message` as `[{ field, message }]`
-so forms can map inline errors, 401 missing/unknown identity, 404 not found, 409 duplicate
-email (thrown at the service).
+so forms can map inline errors, 401 missing/bad/expired token or bad credentials, 404 not found,
+409 duplicate email (thrown at the service). Guard failures carry the package's `errorCode`
+(`missing_credentials`, `invalid_token`, ...).
 
 OpenAPI follows the Nest docs' Standard Schema support: route params take the zod schema
 directly (`@Body({ schema })`), validation is the built-in `StandardSchemaValidationPipe`
@@ -135,6 +140,7 @@ types). No registry, no committed openapi.json
 - Metro resolves packages hoisted to the repo root; `@tamagui/core`, `@tamagui/web`, `tamagui` are forced to a single copy at the workspace root (root `overrides` pin them together). Keep those in sync when bumping Tamagui.
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `chore:`, `docs:`. Branches: `feat/description`, `fix/description`.
 - Don't add dependencies without a good reason — ask first.
+- **Backend auth packages**: `@nestjs/authentication` (exact-pinned) provides the global guard, `@Public()`/`@Authenticate()`, `TokenService` refresh rotation and the scrypt `PasswordHasher` (OWASP params; keep hashes in `users.password_hash`); `@nestjs/authorization` (exact-pinned) provides `@Policy()` classes and `@Can()`, deny-by-default. Import order matters: `AuthenticationModule` (inside `AuthModule`) **before** `AuthorizationModule.forRoot()` in `app.module.ts`. `PrismaRefreshTokenStore` (`features/auth/refresh-token.store.ts`) implements the package's `RefreshTokenStore` contract; production refuses to boot without it.
 - **Track events for every user action** (implementation requirement, not optional). PostHog via the `lib/analytics` facade (mobile) and `AnalyticsService` (backend) — never import PostHog directly.
   - Add the event to `apps/mobile/lib/analytics/events.ts` first, do the same for the backend whenever needed (for example if owner of needed information is backend and frontend it not aware of it) in `apps/backend/src/core/analytics/events.ts` (same name convention). Some events should be tracked on the frontend when they are associated with a specific user action, but some events should be tracked on the backend because it is more reliable that such action is completed. Naming: `{slice}.{event_snake}`, keyed by vertical slice — see the example in `events.ts`.
   - Mobile: `track(events.<slice>.<event>)` at the user action site. Backend: `analytics.track(event, distinctId, props)` where server-side tracking matters.
@@ -151,7 +157,7 @@ types). No registry, no committed openapi.json
 - The backend compose project is explicitly named `meal-planner` (folder name `backend` collides with other repos' compose projects) and publishes on host port **5433** — a local Supabase stack from another project already owns 5432. `DATABASE_URL` and `DB_PORT` must agree.
 - `apps/backend/src/generated/prisma` is gitignored and produced by `postinstall` (`prisma generate`). Never edit it; re-run `npm install` (or `npx prisma generate`) after changing `prisma/schema.prisma`.
 - Prisma reads connection config from `prisma7.config.ts`, not from the datasource block. `npx prisma` resolves the workspace-local 7.10.0 — never let it fall back to the registry `latest` (an 8.0.0-rc).
-- Adding a backend slice = `src/features/<name>/` with flat files — `<name>.controller.ts`, one `<process>.service.ts` per process, `<name>.schema.ts` (request), `<name>.mapper.ts` (response) — plus a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, `x-user-id` via `@ApiSecurity`. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
+- Adding a backend slice = `src/features/<name>/` with flat files — `<name>.controller.ts`, one `<process>.service.ts` per process, `<name>.schema.ts` (request), `<name>.mapper.ts` (response) — plus a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, auth via `@ApiSecurity('bearer')`. Every handler also needs `@Public()` or `@Can.Anyone()`/`@Can(...)` — the authorization guard denies undeclared handlers. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
 - Backend tests truncate `users` (cascades) before each test and refuse to run unless `DATABASE_URL` points at a `*_test` database. The test database is created by `docker/init-test-db.sh` on the first compose init — after migrating from the Adonis setup, run `docker compose down -v` once.
 - Expo pins companion packages to `~57.0.x` — run `npx expo install <pkg>` for Expo libs instead of `npm install`, and check with `npx expo install --check`.
 - The migration that produced this backend is documented in `docs/migration-p0-findings.md` (why zod stayed, plus the version traps).

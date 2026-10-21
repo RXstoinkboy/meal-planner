@@ -1,8 +1,9 @@
 import { Controller, Get } from '@nestjs/common'
+import { CurrentUser } from '@nestjs/authentication'
+import { Can } from '@nestjs/authorization'
 import { ApiOkResponse, ApiSecurity, ApiUnauthorizedResponse } from '@nestjs/swagger'
 
 import { stockErrorResponseSchema } from '@/core/http/error.schema'
-import { CurrentUserId } from '@/core/identity/current-user.decorator'
 import { responseOptions } from '@/core/swagger/swagger-schema'
 import { AccountService } from '@/features/auth/account/account.service'
 import {
@@ -11,17 +12,18 @@ import {
   userResponseSchema,
 } from '@/features/auth/user/user.mapper'
 
+@Can.Anyone()
 @Controller('account')
 export class AccountController {
   constructor(private readonly account: AccountService) {}
 
   @Get('profile')
-  @ApiSecurity('x-user-id')
+  @ApiSecurity('bearer')
   @ApiOkResponse(responseOptions(userResponseSchema, 'Current user'))
   @ApiUnauthorizedResponse(
-    responseOptions(stockErrorResponseSchema, 'Missing or unknown x-user-id header')
+    responseOptions(stockErrorResponseSchema, 'Missing, unknown or expired bearer token')
   )
-  async show(@CurrentUserId() userId: number): Promise<UserResponse> {
+  async show(@CurrentUser('id') userId: number): Promise<UserResponse> {
     return toUserResponse(await this.account.requireById(userId))
   }
 }

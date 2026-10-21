@@ -32,26 +32,48 @@ enum RecipeSourceKind {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  fullName  String?  @map("full_name") @db.VarChar(255)
-  email     String   @unique @db.VarChar(254)
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(6)
-  updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+  id           Int      @id @default(autoincrement())
+  fullName     String?  @map("full_name") @db.VarChar(255)
+  email        String   @unique @db.VarChar(254)
+  passwordHash String?  @map("password_hash") @db.VarChar(255)
+  role         String   @default("user") @db.VarChar(255)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
 
-  recipes Recipe[]
+  recipes       Recipe[]
+  refreshTokens RefreshToken[]
 
   @@map("users")
 }
 
+model RefreshToken {
+  id              String    @id
+  familyId        String    @map("family_id")
+  userId          Int       @map("user_id")
+  createdAt       DateTime  @map("created_at") @db.Timestamp(6)
+  expiresAt       DateTime  @map("expires_at") @db.Timestamp(6)
+  familyExpiresAt DateTime  @map("family_expires_at") @db.Timestamp(6)
+  usedAt          DateTime? @map("used_at") @db.Timestamp(6)
+  revoked         Boolean   @default(false)
+  claims          Json?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([familyId])
+  @@index([userId])
+  @@index([familyExpiresAt])
+  @@map("refresh_tokens")
+}
+
 model Recipe {
-  id          Int     @id @default(autoincrement())
-  userId      Int     @map("user_id")
-  title       String  @db.VarChar(255)
+  id          Int      @id @default(autoincrement())
+  userId      Int      @map("user_id")
+  title       String   @db.VarChar(255)
   description String?
   servings    Int
-  prepMinutes Int?    @map("prep_minutes")
-  cookMinutes Int?    @map("cook_minutes")
-  cuisine     String? @db.VarChar(255)
+  prepMinutes Int?     @map("prep_minutes")
+  cookMinutes Int?     @map("cook_minutes")
+  cuisine     String?  @db.VarChar(255)
   tags        String[] @default([])
   tools       String[] @default([])
   notes       String?
@@ -79,15 +101,15 @@ model Recipe {
 }
 
 model RecipeIngredient {
-  id        Int     @id @default(autoincrement())
-  recipeId  Int     @map("recipe_id")
-  position  Int
-  rawText   String  @map("raw_text") @db.VarChar(255)
-  name      String  @db.VarChar(255)
-  quantity  Decimal? @db.Decimal(8, 2)
-  unit      String? @db.VarChar(255)
-  category  String? @db.VarChar(255)
-  optional  Boolean @default(false)
+  id       Int      @id @default(autoincrement())
+  recipeId Int      @map("recipe_id")
+  position Int
+  rawText  String   @map("raw_text") @db.VarChar(255)
+  name     String   @db.VarChar(255)
+  quantity Decimal? @db.Decimal(8, 2)
+  unit     String?  @db.VarChar(255)
+  category String?  @db.VarChar(255)
+  optional Boolean  @default(false)
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 
@@ -96,11 +118,11 @@ model RecipeIngredient {
 }
 
 model RecipeStep {
-  id              Int     @id @default(autoincrement())
-  recipeId        Int     @map("recipe_id")
+  id              Int    @id @default(autoincrement())
+  recipeId        Int    @map("recipe_id")
   position        Int
   text            String
-  durationMinutes Int?    @map("duration_minutes")
+  durationMinutes Int?   @map("duration_minutes")
 
   recipe Recipe @relation(fields: [recipeId], references: [id], onDelete: Cascade)
 

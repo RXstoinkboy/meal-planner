@@ -8,16 +8,23 @@ export type UserDto = {
 	initials: string;
 };
 
-/** Mirrors signupSchema; password fields are accepted and ignored by the API. */
+/** Mirrors session.mapper's sessionResponseSchema: signup and login return both tokens. */
+export type SessionDto = {
+	accessToken: string;
+	refreshToken: string;
+	user: UserDto;
+};
+
+/** Mirrors signupSchema: password required, confirmation must match. */
 export type SignupDto = {
 	fullName?: string | null;
 	email: string;
-	password?: string;
-	passwordConfirmation?: string;
+	password: string;
+	passwordConfirmation: string;
 };
 
-/** Mirrors loginSchema; the password is accepted and ignored. */
+/** Mirrors loginSchema. */
 export type LoginDto = {
 	email: string;
-	password?: string;
+	password: string;
 };

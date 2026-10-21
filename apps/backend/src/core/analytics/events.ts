@@ -22,6 +22,7 @@ export const events = {
     base: authBase,
     signedUp: `${authBase}.signed_up`,
     loggedIn: `${authBase}.logged_in`,
+    loggedOut: `${authBase}.logged_out`,
   },
   recipes: {
     base: recipesBase,

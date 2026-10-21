@@ -2,17 +2,20 @@ import { z } from 'zod'
 
 import { nullableString } from '@/core/zod/nullable-string'
 
-const email = () => z.string().trim().email().max(254)
+const email = () => z.email().trim().max(254).toLowerCase()
 
-// Password fields are accepted and ignored: the mobile form still sends them, and
-// there is no authentication yet. Alert when they stop being inert.
-const password = () => z.string().max(72).optional()
+const password = () => z.string().min(12).max(128)
 
-export const signupSchema = z.object({
-  fullName: nullableString().optional(),
-  email: email(),
-  password: password(),
-  passwordConfirmation: password(),
-})
+export const signupSchema = z
+  .object({
+    fullName: nullableString().optional(),
+    email: email(),
+    password: password(),
+    passwordConfirmation: password(),
+  })
+  .refine((body) => body.password === body.passwordConfirmation, {
+    path: ['passwordConfirmation'],
+    message: 'Passwords do not match',
+  })
 
 export type SignupPayload = z.infer<typeof signupSchema>

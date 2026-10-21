@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common'
 import { ConfigModule } from '@nestjs/config'
 import { APP_FILTER, APP_GUARD, APP_PIPE } from '@nestjs/core'
+import { AuthorizationModule } from '@nestjs/authorization'
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler'
 import { SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
@@ -9,6 +10,7 @@ import { AppController } from '@/app.controller'
 import { env } from '@/core/config/env'
 import { loggerOptions } from '@/core/config/logger'
 import { AnalyticsModule } from '@/core/analytics/analytics.module'
+import { AdminPolicy } from '@/core/authorization/admin.policy'
 import { PrismaModule } from '@/core/database/prisma.module'
 import { HealthModule } from '@/core/health/health.module'
 import { HttpExceptionFilter } from '@/core/http/http-exception.filter'
@@ -28,7 +30,9 @@ import { StandardSchemaValidationPipe } from '@nestjs/common/pipes/standard-sche
     AnalyticsModule,
     PrismaModule,
     HealthModule,
+    // Authentication before authorization: global guards run in import order.
     AuthModule,
+    AuthorizationModule.forRoot({ policies: [AdminPolicy] }),
     RecipesModule,
   ],
   controllers: [AppController],

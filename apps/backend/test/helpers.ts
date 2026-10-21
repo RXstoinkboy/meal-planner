@@ -25,11 +25,43 @@ export function createApp(): Promise<INestApplication> {
 
 type UserBody = { id: number; email: string; fullName: string | null; initials: string }
 
-export async function signup(app: INestApplication, email: string, fullName?: string) {
+export type SessionBody = {
+  accessToken: string
+  refreshToken: string
+  user: UserBody
+}
+
+/** Long enough for the signup policy; sign-in has no length rule. */
+export const TEST_PASSWORD = 'correct-horse-battery'
+
+export async function signup(
+  app: INestApplication,
+  email: string,
+  fullName?: string
+): Promise<SessionBody> {
   const response = await request(httpServer(app))
     .post('/api/v1/auth/signup')
-    .send({ email, fullName: fullName ?? 'Test User' })
+    .send({
+      email,
+      fullName: fullName ?? 'Test User',
+      password: TEST_PASSWORD,
+      passwordConfirmation: TEST_PASSWORD,
+    })
     .expect(201)
 
-  return response.body as UserBody
+  return response.body as SessionBody
+}
+
+export async function login(app: INestApplication, email: string): Promise<SessionBody> {
+  const response = await request(httpServer(app))
+    .post('/api/v1/auth/login')
+    .send({ email, password: TEST_PASSWORD })
+    .expect(200)
+
+  return response.body as SessionBody
+}
+
+/** `set()` argument for a session: `.set(bearer(session))`. */
+export function bearer(session: SessionBody) {
+  return { Authorization: `Bearer ${session.accessToken}` }
 }

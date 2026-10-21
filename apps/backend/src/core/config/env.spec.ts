@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import { parseEnv } from '@/core/config/env'
 
-const VALID = { DATABASE_URL: 'postgresql://meal_planner:secret@localhost:5433/meal_planner' }
+const VALID = {
+  DATABASE_URL: 'postgresql://meal_planner:secret@localhost:5433/meal_planner',
+  JWT_SECRET: 'test-secret-not-for-production-0123456789abcdef',
+}
 
 describe('env schema', () => {
   it('applies the defaults', () => {
@@ -29,6 +32,10 @@ describe('env schema', () => {
 
   it('fails fast on a missing database url', () => {
     expect(() => parseEnv({})).toThrow(/DATABASE_URL/)
+  })
+
+  it('fails fast on a weak jwt secret', () => {
+    expect(() => parseEnv({ ...VALID, JWT_SECRET: 'too-short' })).toThrow(/JWT_SECRET/)
   })
 
   it('fails fast on an unknown node env', () => {

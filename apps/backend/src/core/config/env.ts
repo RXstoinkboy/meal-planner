@@ -1,10 +1,18 @@
 import { config as loadDotenv } from 'dotenv'
+import type { Duration } from '@nestjs/authentication'
 import { z } from 'zod'
 
 const nodeEnv = process.env['NODE_ENV'] ?? 'development'
 
 // `.env.test` wins for tests; dotenv never overwrites an already-set process.env value.
 loadDotenv({ path: [`.env.${nodeEnv}`, '.env'], quiet: true })
+
+/** A `Duration` string (`15m`, `1h`, `30d`). */
+const duration = () =>
+  z
+    .string()
+    .regex(/^\d+(ms|s|m|h|d|w)$/, 'Expected a duration such as 15m, 1h, 30d')
+    .transform((value) => value as Duration)
 
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
@@ -13,6 +21,11 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent']).default('info'),
 
   DATABASE_URL: z.string().min(1),
+
+  /** HS256 secret for access tokens: 32+ bytes. `openssl rand -hex 32`; boot fails without it. */
+  JWT_SECRET: z.string().min(32),
+  JWT_EXPIRES_IN: duration().default('15m'),
+  REFRESH_EXPIRES_IN: duration().default('30d'),
 
   /** Comma separated allowlist. Empty reflects any origin, which is the dev default. */
   CORS_ORIGIN: z.string().optional(),

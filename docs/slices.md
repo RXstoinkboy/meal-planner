@@ -84,7 +84,8 @@ was read. §8 updated to match; SQL keep as-is, ownership is what changed.
 ### Route groups
 
 One `@Controller('<prefix>')` per slice, mounted under the global `api` prefix + URI versioning
-(so `/api/v1/...`). The `x-user-id` identity seam applies to every slice except `auth`.
+(so `/api/v1/...`). Every slice except `auth` reads the caller through `@CurrentUser('id')` (Bearer JWT);
+routes opt into the guard with `@Can.Anyone()`/`@Can(...)`, or out of it with `@Public()`.
 
 | prefix | slice | notes |
 | --- | --- | --- |
@@ -96,8 +97,8 @@ One `@Controller('<prefix>')` per slice, mounted under the global `api` prefix +
 | `preferences` | `profile` | constraints |
 | `feedback` | `feedback` | `POST` signal (slot outcome, rating, dislike) |
 
-`auth` / `account` live in `features/auth` (it owns `users`); `/account/logout` is gone — there is
-no authentication yet, so logging out is purely client-side.
+`auth` / `account` live in `features/auth` (it owns `users`); logging out revokes the
+refresh-token family server-side (`POST /auth/logout`), then drops the client session.
 
 ---
 

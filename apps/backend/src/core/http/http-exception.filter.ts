@@ -18,7 +18,7 @@ function prismaErrorCode(exception: unknown): string | undefined {
   return typeof code === 'string' && code.startsWith('P') ? code : undefined
 }
 
-type RequestWithUser = Omit<Request, 'route'> & { userId?: number; route?: { path?: string } }
+type RequestWithUser = Omit<Request, 'route'> & { route?: { path?: string } }
 
 type Failure = { status: number; body: unknown }
 
@@ -81,8 +81,10 @@ export class HttpExceptionFilter implements ExceptionFilter {
       scope.setTag('method', request.method)
       scope.setContext('request', { path: request.originalUrl })
 
-      if (request.userId) {
-        scope.setUser({ id: String(request.userId) })
+      const user = request.user
+
+      if (user) {
+        scope.setUser({ id: String(user.id) })
       }
 
       return scope

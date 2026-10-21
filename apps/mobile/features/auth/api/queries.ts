@@ -7,26 +7,32 @@ import {
 
 import { queryClient } from "@/lib/api/client";
 import { ApiError } from "@/lib/api/error";
-import { identify, reset } from "@/lib/analytics";
+import { identify } from "@/lib/analytics";
 import { setSentryUser } from "@/lib/sentry";
-import { clearUser, setUser } from "@/state/auth";
+import { auth$, clearSession, setUser } from "@/state/auth";
 
-import { fetchProfile, login, signup } from "./api";
-import type { LoginDto, SignupDto, UserDto } from "./dto";
+import { fetchProfile, login, logout, signup } from "./api";
+import type { LoginDto, SessionDto, SignupDto, UserDto } from "./dto";
 import { authKeys } from "./keys";
 
 /** Auth slice server state. All API calls go through the TanStack Query hooks here. */
 
-function persistUser(user: UserDto) {
+function persistSession(session: SessionDto) {
 	// drop anything cached for the previous identity before switching
 	queryClient.clear();
-	setUser({ userId: user.id, email: user.email, fullName: user.fullName });
-	identify(String(user.id));
-	setSentryUser(String(user.id));
+	setUser({
+		userId: session.user.id,
+		email: session.user.email,
+		fullName: session.user.fullName,
+		token: session.accessToken,
+		refreshToken: session.refreshToken,
+	});
+	identify(String(session.user.id));
+	setSentryUser(String(session.user.id));
 }
 
 type SignupOptions<TContext> = Omit<
-	UseMutationOptions<UserDto, ApiError, SignupDto, TContext>,
+	UseMutationOptions<SessionDto, ApiError, SignupDto, TContext>,
 	"mutationFn"
 >;
 
@@ -37,14 +43,14 @@ export function useSignup<TContext = unknown>(
 		mutationFn: signup,
 		...options,
 		onSuccess: (data, variables, context, mutation) => {
-			persistUser(data);
+			persistSession(data);
 			options?.onSuccess?.(data, variables, context, mutation);
 		},
 	});
 }
 
 type LoginOptions<TContext> = Omit<
-	UseMutationOptions<UserDto, ApiError, LoginDto, TContext>,
+	UseMutationOptions<SessionDto, ApiError, LoginDto, TContext>,
 	"mutationFn"
 >;
 
@@ -53,7 +59,7 @@ export function useLogin<TContext = unknown>(options?: LoginOptions<TContext>) {
 		mutationFn: login,
 		...options,
 		onSuccess: (data, variables, context, mutation) => {
-			persistUser(data);
+			persistSession(data);
 			options?.onSuccess?.(data, variables, context, mutation);
 		},
 	});
@@ -77,16 +83,20 @@ type LogoutOptions<TContext> = Omit<
 	"mutationFn"
 >;
 
-/** There are no tokens to revoke — logging out is local state only. */
+/** Server-side revocation first (best effort); the local session goes either way. */
 export function useLogout<TContext = unknown>(
 	options?: LogoutOptions<TContext>,
 ) {
 	return useMutation({
 		mutationFn: async () => {
-			clearUser();
+			const user = auth$.user.peek();
+
+			if (user) {
+				await logout(user.refreshToken).catch(() => undefined);
+			}
+
+			clearSession();
 			queryClient.clear();
-			reset();
-			setSentryUser(null);
 		},
 		...options,
 	});

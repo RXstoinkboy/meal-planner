@@ -19,13 +19,14 @@ import {
   ApiSecurity,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger'
+import { CurrentUser } from '@nestjs/authentication'
+import { Can } from '@nestjs/authorization'
 import { z } from 'zod'
 
 import { AnalyticsService } from '@/core/analytics/analytics.service'
 import { events } from '@/core/analytics/events'
 import { stockErrorResponseSchema } from '@/core/http/error.schema'
 import { ParseIdPipe } from '@/core/http/parse-id.pipe'
-import { CurrentUserId } from '@/core/identity/current-user.decorator'
 import { responseOptions } from '@/core/swagger/swagger-schema'
 import {
   toRecipeResponse,
@@ -42,6 +43,8 @@ import {
 
 const idParamSchema = { type: 'integer', minimum: 1 }
 
+// Anyone authentication lets through; RecipesService scopes rows to the caller.
+@Can.Anyone()
 @Controller('recipes')
 export class RecipesController {
   constructor(
@@ -50,23 +53,27 @@ export class RecipesController {
   ) {}
 
   @Get()
-  @ApiSecurity('x-user-id')
+  @ApiSecurity('bearer')
   @ApiOkResponse(responseOptions(z.array(recipeResponseSchema), 'Recipes'))
-  @ApiUnauthorizedResponse(responseOptions(stockErrorResponseSchema, 'Missing x-user-id header'))
-  async index(@CurrentUserId() userId: number): Promise<RecipeResponse[]> {
+  @ApiUnauthorizedResponse(
+    responseOptions(stockErrorResponseSchema, 'Missing or expired bearer token')
+  )
+  async index(@CurrentUser('id') userId: number): Promise<RecipeResponse[]> {
     const recipes = await this.recipes.listVisibleTo(userId)
 
     return recipes.map(toRecipeResponse)
   }
 
   @Get(':id')
-  @ApiSecurity('x-user-id')
+  @ApiSecurity('bearer')
   @ApiParam({ name: 'id', schema: idParamSchema, description: 'Recipe id' })
   @ApiOkResponse(responseOptions(recipeResponseSchema, 'Recipe'))
-  @ApiUnauthorizedResponse(responseOptions(stockErrorResponseSchema, 'Missing x-user-id header'))
+  @ApiUnauthorizedResponse(
+    responseOptions(stockErrorResponseSchema, 'Missing or expired bearer token')
+  )
   @ApiNotFoundResponse(responseOptions(stockErrorResponseSchema, 'Recipe not found'))
   async show(
-    @CurrentUserId() userId: number,
+    @CurrentUser('id') userId: number,
     @Param('id', ParseIdPipe) id: number
   ): Promise<RecipeResponse> {
     return toRecipeResponse(await this.recipes.findVisible(userId, id))
@@ -74,12 +81,14 @@ export class RecipesController {
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
-  @ApiSecurity('x-user-id')
+  @ApiSecurity('bearer')
   @ApiCreatedResponse(responseOptions(recipeResponseSchema, 'Created recipe'))
   @ApiBadRequestResponse(responseOptions(stockErrorResponseSchema, 'Validation failed'))
-  @ApiUnauthorizedResponse(responseOptions(stockErrorResponseSchema, 'Missing x-user-id header'))
+  @ApiUnauthorizedResponse(
+    responseOptions(stockErrorResponseSchema, 'Missing or expired bearer token')
+  )
   async store(
-    @CurrentUserId() userId: number,
+    @CurrentUser('id') userId: number,
     @Body({ schema: createRecipeSchema }) body: CreateRecipeInput
   ): Promise<RecipeResponse> {
     const recipe = await this.recipes.create(userId, body)
@@ -90,14 +99,16 @@ export class RecipesController {
   }
 
   @Patch(':id')
-  @ApiSecurity('x-user-id')
+  @ApiSecurity('bearer')
   @ApiParam({ name: 'id', schema: idParamSchema, description: 'Recipe id' })
   @ApiOkResponse(responseOptions(recipeResponseSchema, 'Updated recipe'))
   @ApiBadRequestResponse(responseOptions(stockErrorResponseSchema, 'Validation failed'))
-  @ApiUnauthorizedResponse(responseOptions(stockErrorResponseSchema, 'Missing x-user-id header'))
+  @ApiUnauthorizedResponse(
+    responseOptions(stockErrorResponseSchema, 'Missing or expired bearer token')
+  )
   @ApiNotFoundResponse(responseOptions(stockErrorResponseSchema, 'Recipe not found'))
   async update(
-    @CurrentUserId() userId: number,
+    @CurrentUser('id') userId: number,
     @Param('id', ParseIdPipe) id: number,
     @Body({ schema: updateRecipeSchema }) body: UpdateRecipeInput
   ): Promise<RecipeResponse> {
@@ -110,13 +121,15 @@ export class RecipesController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
-  @ApiSecurity('x-user-id')
+  @ApiSecurity('bearer')
   @ApiParam({ name: 'id', schema: idParamSchema, description: 'Recipe id' })
   @ApiNoContentResponse({ description: 'Deleted' })
-  @ApiUnauthorizedResponse(responseOptions(stockErrorResponseSchema, 'Missing x-user-id header'))
+  @ApiUnauthorizedResponse(
+    responseOptions(stockErrorResponseSchema, 'Missing or expired bearer token')
+  )
   @ApiNotFoundResponse(responseOptions(stockErrorResponseSchema, 'Recipe not found'))
   async destroy(
-    @CurrentUserId() userId: number,
+    @CurrentUser('id') userId: number,
     @Param('id', ParseIdPipe) id: number
   ): Promise<void> {
     await this.recipes.softDelete(userId, id)

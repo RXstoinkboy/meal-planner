@@ -17,15 +17,7 @@ export function serveOpenApi(app: INestApplication) {
   const config = new DocumentBuilder()
     .setTitle('Meal Planner API')
     .setVersion('1.0.0')
-    .addApiKey(
-      {
-        type: 'apiKey',
-        in: 'header',
-        name: 'x-user-id',
-        description: 'Caller identity until real authentication lands',
-      },
-      'x-user-id'
-    )
+    .addBearerAuth()
     .build()
 
   SwaggerModule.setup('docs', app, SwaggerModule.createDocument(app, config))
