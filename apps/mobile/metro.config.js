@@ -1,5 +1,6 @@
 const path = require("path");
 const { getSentryExpoConfig } = require("@sentry/react-native/metro");
+const { withTamagui } = require("@tamagui/metro-plugin");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "../..");
@@ -24,4 +25,9 @@ config.resolver.extraNodeModules = tamaguiSingletons.reduce((acc, pkg) => {
 	return acc;
 }, {});
 
-module.exports = config;
+// Tamagui v3: compiles in Metro (replaces the removed @tamagui/babel-plugin).
+module.exports = withTamagui(config, {
+	components: ["tamagui"],
+	config: "./tamagui.config.ts",
+	disableExtraction: process.env.NODE_ENV === "development",
+});

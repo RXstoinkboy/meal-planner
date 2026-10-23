@@ -5,7 +5,7 @@ Monorepo for the Meal Planner app: Expo mobile/web client + NestJS API.
 ## Tech Stack
 
 - **Monorepo**: Turborepo (npm workspaces, npm@11.16)
-- **Mobile** (`apps/mobile`): Expo SDK 57 (RN 0.86.3, React 19.2) + Expo Router (file-based routing, typed routes) + Tamagui v2 (UI) + Legend-State (global state) + TanStack Query v5 (server state, persisted to AsyncStorage). Runs on iOS, Android **and web** (metro bundler, static output).
+- **Mobile** (`apps/mobile`): Expo SDK 57 (RN 0.86.3, React 19.2) + Expo Router (file-based routing, typed routes) + Tamagui v3 (UI, frozen Config v5 pack) + Legend-State (global state) + TanStack Query v5 (server state, persisted to AsyncStorage). Runs on iOS, Android **and web** (metro bundler, static output).
 - **Backend** (`apps/backend`): NestJS v12 (Express, CommonJS output) + PostgreSQL via Prisma 7 (`@prisma/adapter-pg` driver adapter) + Zod validation + OpenAPI 3.1 generated from the same Zod schemas + Vitest/supertest (tests)
 - **Dev**: TypeScript 6.0.3, ESLint, Prettier, `nest start --watch`
 
@@ -17,7 +17,7 @@ Three toolchain majors exist upstream but are held back by their plugin ecosyste
 | ------ | ------------ | ----------- |
 | TypeScript 7 (native `tsgo` build) unused — on `~6.0.3` bridge release (what the Expo toolchain pins) | `typescript-eslint@8.70.0` peer `typescript <6.1.0`. tseslint drives the JS compiler API; TS 7 ships native binaries without it. Even the 8.70.1-alpha canary still gates at `<6.1.0` | typescript-eslint peer range accepts 7.x |
 | ESLint on `^9.39.5` (10.10.0 exists) | `eslint-plugin-react@7.37.5` peer caps at `^9.7`; it still calls removed API `context.getFilename()` (lib/util/version.js:31). Pulled in via `eslint-config-expo`, can't be dropped without forking that config | eslint-plugin-react (or eslint-config-expo) declares ESLint 10 support |
-| `@babel/core` on `^7.29.7` (8.0.1 exists) | whole Expo transform chain is Babel 7: `babel-preset-expo` pins every `@babel/*` to `^7`, `@expo/metro-config` depends on `@babel/core ^7.20.0`, worklets/Tamagui plugins assert `^7.0.0-0` | `babel-preset-expo` / `@expo/metro-config` migrate to Babel 8 |
+| `@babel/core` on `^7.29.7` (8.0.1 exists) | whole Expo transform chain is Babel 7: `babel-preset-expo` pins every `@babel/*` to `^7`, `@expo/metro-config` depends on `@babel/core ^7.20.0`, worklets assert `^7.0.0-0` | `babel-preset-expo` / `@expo/metro-config` migrate to Babel 8 |
 | `prisma@7.10.0` pinned exactly (8.0.0-rc exists) | the npm `latest` dist-tag for the **CLI** points at an 8.0.0 release candidate while `@prisma/client` stays on 7 — never install `prisma` without a version | the 8.0.0 stable line ships and the tags agree |
 
 After lifting a gate: bump the version, then `npx turbo run type-check lint` and `cd apps/mobile && npx expo export --platform web` to verify.
@@ -34,8 +34,8 @@ After lifting a gate: bump the version, then `npx turbo run type-check lint` and
 │   │   ├── assets/          # App icons, splash, favicon
 │   │   ├── app.json         # Expo config (name/slug/package: com.mazelabs.mealplanner)
 │   │   ├── eas.json         # EAS build profiles (development/production)
-│   │   ├── babel.config.js  # babel-preset-expo + @tamagui/babel-plugin
-│   │   ├── metro.config.js  # npm workspaces hoisting + Tamagui singleton resolution
+│   │   ├── babel.config.js  # babel-preset-expo (Tamagui compiles in Metro now)
+│   │   ├── metro.config.js  # npm workspaces hoisting + Tamagui singleton resolution + @tamagui/metro-plugin
 │   │   ├── tamagui.config.ts# Barebones Tamagui config (default config, NO themes)
 │   │   ├── tsconfig.json
 │   │   └── .env.example
@@ -134,7 +134,7 @@ types). No registry, no committed openapi.json
 ## Key Conventions
 
 - Mobile imports alias: `@/` → `apps/mobile/` root.
-- Tamagui v2 with `onlyAllowShorthands: true` (from `@tamagui/config/v5`): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Extend `tamagui.config.ts` if you ever need to change this; do not add a themes package unless asked.
+- Tamagui v3 with `onlyAllowShorthands: true` (from the frozen `@tamagui/config/v5` pack): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Style values are **flat/bare**: no `$` sigils — `p="5"`, `color="red9"` (palette names valid on the v5 pack), conditions as string clauses (`hover:`/`sm:`/`dark:`). Extend `tamagui.config.ts` if you ever need to change this; do not add a themes package unless asked. Config v6 migration deferred on purpose (docs: keep v5 values while converting syntax).
 - State split (mirrors fitly): Legend-State for persistent app state (`state/`), TanStack Query for server data (`queries/`), API calls only through TanStack Query.
 - Vertical slices are **lint-enforced** with `eslint-plugin-boundaries` (`boundaries/dependencies`) in both apps' flat ESLint configs — see `.pi/skills/vertical-slices/SKILL.md`. Both configs need `eslint-import-resolver-typescript` + the `import/resolver.typescript` setting: without it `@/features/*` and the `@/` alias resolve as external and every boundary rule silently no-ops.
 - Metro resolves packages hoisted to the repo root; `@tamagui/core`, `@tamagui/web`, `tamagui` are forced to a single copy at the workspace root (root `overrides` pin them together). Keep those in sync when bumping Tamagui.
