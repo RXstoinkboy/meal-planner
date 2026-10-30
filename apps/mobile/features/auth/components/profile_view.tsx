@@ -24,7 +24,7 @@ export function ProfileView() {
 				{user?.initials ?? "…"}
 			</Text>
 			<Text fontSize="6">{user?.fullName ?? user?.email}</Text>
-			<Text color="gray9">{user?.email}</Text>
+			<Text color="color-11">{user?.email}</Text>
 
 			<Button
 				theme="red"

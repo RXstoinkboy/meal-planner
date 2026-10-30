@@ -58,12 +58,12 @@ export function AuthView() {
 			)}
 
 			{mutation.isError && Object.keys(errors).length === 0 && (
-				<Text color="red9">
+				<Text color="red-600 dark:red-400">
 					{String(mutation.error?.message ?? t("auth.requestFailed"))}
 				</Text>
 			)}
 			{Object.entries(errors).map(([field, message]) => (
-				<Text key={field} color="red9">
+				<Text key={field} color="red-600 dark:red-400">
 					{message}
 				</Text>
 			))}

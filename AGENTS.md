@@ -5,7 +5,7 @@ Monorepo for the Meal Planner app: Expo mobile/web client + NestJS API.
 ## Tech Stack
 
 - **Monorepo**: Turborepo (npm workspaces, npm@11.16)
-- **Mobile** (`apps/mobile`): Expo SDK 57 (RN 0.86.3, React 19.2) + Expo Router (file-based routing, typed routes) + Tamagui v3 (UI, frozen Config v5 pack) + Legend-State (global state) + TanStack Query v5 (server state, persisted to AsyncStorage). Runs on iOS, Android **and web** (metro bundler, static output).
+- **Mobile** (`apps/mobile`): Expo SDK 57 (RN 0.86.3, React 19.2) + Expo Router (file-based routing, typed routes) + Tamagui v3 (UI, Config v6 pack) + Legend-State (global state) + TanStack Query v5 (server state, persisted to AsyncStorage). Runs on iOS, Android **and web** (metro bundler, static output).
 - **Backend** (`apps/backend`): NestJS v12 (Express, CommonJS output) + PostgreSQL via Prisma 7 (`@prisma/adapter-pg` driver adapter) + Zod validation + OpenAPI 3.1 generated from the same Zod schemas + Vitest/supertest (tests)
 - **Dev**: TypeScript 6.0.3, ESLint, Prettier, `nest start --watch`
 
@@ -134,7 +134,7 @@ types). No registry, no committed openapi.json
 ## Key Conventions
 
 - Mobile imports alias: `@/` → `apps/mobile/` root.
-- Tamagui v3 with `onlyAllowShorthands: true` (from the frozen `@tamagui/config/v5` pack): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Style values are **flat/bare**: no `$` sigils — `p="5"`, `color="red9"` (palette names valid on the v5 pack), conditions as string clauses (`hover:`/`sm:`/`dark:`). Extend `tamagui.config.ts` if you ever need to change this; do not add a themes package unless asked. Config v6 migration deferred on purpose (docs: keep v5 values while converting syntax).
+- Tamagui v3 with `onlyAllowShorthands: true` (from the `@tamagui/config/v6` pack): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Style values are **flat/bare**: no `$` sigils — `p="5"`, conditions as string clauses (`hover:`/`sm:`/`dark:`). Colors: theme keys are kebab (`color-11`, `border-color`), palette tokens are Tailwind shades (`red-600`, `gray-500`), space/size follow the 4px grid. Extend `tamagui.config.ts` if you ever need to change this; do not add a themes package unless asked.
 - State split (mirrors fitly): Legend-State for persistent app state (`state/`), TanStack Query for server data (`queries/`), API calls only through TanStack Query.
 - Vertical slices are **lint-enforced** with `eslint-plugin-boundaries` (`boundaries/dependencies`) in both apps' flat ESLint configs — see `.pi/skills/vertical-slices/SKILL.md`. Both configs need `eslint-import-resolver-typescript` + the `import/resolver.typescript` setting: without it `@/features/*` and the `@/` alias resolve as external and every boundary rule silently no-ops.
 - Metro resolves packages hoisted to the repo root; `@tamagui/core`, `@tamagui/web`, `tamagui` are forced to a single copy at the workspace root (root `overrides` pin them together). Keep those in sync when bumping Tamagui.
