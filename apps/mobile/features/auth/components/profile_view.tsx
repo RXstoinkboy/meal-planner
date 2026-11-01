@@ -19,15 +19,15 @@ export function ProfileView() {
 	const user = profile.data;
 
 	return (
-		<YStack grow={1} justify="center" items="center" gap="4" p="5">
+		<YStack grow={1} justify="center" items="center" gap="4" p="5" bg="surface">
 			<Text fontSize="8" fontWeight="bold">
 				{user?.initials ?? "…"}
 			</Text>
 			<Text fontSize="6">{user?.fullName ?? user?.email}</Text>
-			<Text color="color-11">{user?.email}</Text>
+			<Text color="on-surface-variant">{user?.email}</Text>
 
 			<Button
-				theme="red"
+				theme="error"
 				onPress={() => {
 					track(events.auth.logoutButtonClicked);
 					logout.mutate();

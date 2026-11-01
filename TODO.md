@@ -71,3 +71,15 @@ duplicating them.
 - **pgvector embeddings** — for discovery ranking / "similar recipes".
 - **Soft-delete retention** — archival policy; every extra year of `deleted_at` rows costs the partial index and plan/shopping history resolution.
 - **Richer `recipe_sources`** — video timestamps, page numbers; ties into item 15 (multi-source UI).
+
+## Design system follow-ups
+
+- **Dark theme** — the design ships a light palette only, so
+  `apps/mobile/tamagui.config.ts` deliberately defines `light` +
+  `light_<accent>` with `shouldAddPrefersColorThemes: false` and
+  `userInterfaceStyle: light`. Adding dark means: author `dark` and
+  `dark_<accent>` variants (plus `dark_<accent>_level2` if a level2 theme is
+  ever added), switch the neutral `color-1…color-11` ramp to dark values,
+  flip `shouldAddPrefersColorThemes`/`fastSchemeChange`, set
+  `userInterfaceStyle: automatic`, and audit palette tokens used on surfaces
+  that flip. *Payoff: night cooking without a blinding canvas.*

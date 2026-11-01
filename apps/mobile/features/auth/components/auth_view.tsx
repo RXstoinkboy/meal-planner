@@ -21,7 +21,7 @@ export function AuthView() {
 	const errors = fieldErrors(mutation.error);
 
 	return (
-		<YStack grow={1} justify="center" p="5" gap="4">
+		<YStack grow={1} justify="center" p="5" gap="4" bg="surface">
 			<Text fontSize="8" fontWeight="bold">
 				{t("app.name")}
 			</Text>
@@ -58,12 +58,12 @@ export function AuthView() {
 			)}
 
 			{mutation.isError && Object.keys(errors).length === 0 && (
-				<Text color="red-600 dark:red-400">
+				<Text color="error">
 					{String(mutation.error?.message ?? t("auth.requestFailed"))}
 				</Text>
 			)}
 			{Object.entries(errors).map(([field, message]) => (
-				<Text key={field} color="red-600 dark:red-400">
+				<Text key={field} color="error">
 					{message}
 				</Text>
 			))}
