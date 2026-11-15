@@ -5,7 +5,7 @@ Monorepo for the Meal Planner app: Expo mobile/web client + NestJS API.
 ## Tech Stack
 
 - **Monorepo**: Turborepo (npm workspaces, npm@11.16)
-- **Mobile** (`apps/mobile`): Expo SDK 57 (RN 0.86.3, React 19.2) + Expo Router (file-based routing, typed routes) + Tamagui v3 (UI, Config v6 pack) + Legend-State (global state) + TanStack Query v5 (server state, persisted to AsyncStorage). Runs on iOS, Android **and web** (metro bundler, static output).
+- **Mobile** (`apps/mobile`): Expo SDK 58 (RN 0.88.1, React 19.3) + Expo Router (file-based routing, typed routes) + Tamagui v3 (UI, Config v6 pack) + Legend-State (global state) + TanStack Query v5 (server state, persisted to AsyncStorage). Runs on iOS, Android **and web** (metro bundler, static output).
 - **Backend** (`apps/backend`): NestJS v12 (Express, CommonJS output) + PostgreSQL via Prisma 7 (`@prisma/adapter-pg` driver adapter) + Zod validation + OpenAPI 3.1 generated from the same Zod schemas + Vitest/supertest (tests)
 - **Dev**: TypeScript 6.0.3, ESLint, Prettier, `nest start --watch`
 
@@ -160,5 +160,5 @@ types). No registry, no committed openapi.json
 - Adding a backend slice = `src/features/<name>/` with flat files — `<name>.controller.ts`, one `<process>.service.ts` per process, `<name>.schema.ts` (request), `<name>.mapper.ts` (response) — plus a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, auth via `@ApiSecurity('bearer')`. Every handler also needs `@Public()` or `@Can.Anyone()`/`@Can(...)` — the authorization guard denies undeclared handlers. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).
 - Backend tests truncate `users` (cascades) before each test and refuse to run unless `DATABASE_URL` points at a `*_test` database. The test database is created by `docker/init-test-db.sh` on the first compose init — after migrating from the Adonis setup, run `docker compose down -v` once.
 - Expo injects its `tsconfig.json` `paths` resolver **after** `metro.config.js` is evaluated (it builds a new resolver object in `@expo/cli`'s `withMetroResolvers`), so `@tamagui/metro-plugin`'s compiler frontend — constructed while `metro.config.js` loads — never sees `@/`. Hence the alias is declared twice: in `tsconfig.json` (tsc/ESLint) and as an explicit `resolveRequest` in `apps/mobile/metro.config.js`. Keep both in sync or the Tamagui compiler logs `metro/resolve-failed` warnings for every `@/…` import.
-- Expo pins companion packages to `~57.0.x` — run `npx expo install <pkg>` for Expo libs instead of `npm install`, and check with `npx expo install --check`.
+- Expo pins companion packages to `~58.0.x` — run `npx expo install <pkg>` for Expo libs instead of `npm install`, and check with `npx expo install --check`.
 - The migration that produced this backend is documented in `docs/migration-p0-findings.md` (why zod stayed, plus the version traps).

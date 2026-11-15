@@ -39,14 +39,15 @@
         }
       ],
       "expo-localization",
+      "expo-font",
+      "expo-status-bar",
       [
-        "@sentry/react-native/expo",
+        "@sentry/react-native",
         {
           "organization": "replace-me-sentry-org",
           "project": "replace-me-sentry-project"
         }
-      ],
-      "expo-font"
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
