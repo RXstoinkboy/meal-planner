@@ -25,6 +25,28 @@ config.resolver.extraNodeModules = tamaguiSingletons.reduce((acc, pkg) => {
 	return acc;
 }, {});
 
+// Resolve the tsconfig `@/*` alias here: Expo injects its tsconfig-paths resolver
+// only after metro.config.js runs, so the Tamagui compiler would never see it.
+const aliasPrefix = "@/";
+const upstreamResolveRequest =
+	config.resolver.resolveRequest ??
+	((context, moduleName, platform) =>
+		context.resolveRequest(context, moduleName, platform));
+
+config.resolver.resolveRequest = (context, moduleName, platform) => {
+	const isAlias = moduleName.startsWith(aliasPrefix);
+
+	if (!isAlias) {
+		return upstreamResolveRequest(context, moduleName, platform);
+	}
+
+	return context.resolveRequest(
+		context,
+		path.resolve(projectRoot, moduleName.slice(aliasPrefix.length)),
+		platform,
+	);
+};
+
 // Tamagui v3: compiles in Metro (replaces the removed @tamagui/babel-plugin).
 module.exports = withTamagui(config, {
 	components: ["tamagui"],
