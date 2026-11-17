@@ -4,13 +4,22 @@ name: meal-planner
 
 services:
   db:
-    image: postgres:18-alpine
+    # Pinned to the exact minor; `18` would silently drift on `compose pull`.
+    image: postgres:18.6-alpine
     ports:
       - '${DB_PORT:-5433}:5432'
     environment:
       POSTGRES_USER: ${DB_USER:-meal_planner}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-meal_planner}
       POSTGRES_DB: ${DB_DATABASE:-meal_planner}
+    shm_size: '128mb'
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
     volumes:
       - dbdata:/var/lib/postgresql
       # Only runs on a fresh volume: `docker compose down -v` once after
@@ -21,6 +30,74 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  # Started by `npm run dev` (default flow). Host-only flow lives in
+  # `dev:standalone`.
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      target: development
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    depends_on:
+      db:
+        condition: service_healthy
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: development
+      # `localhost` inside a container is the container itself.
+      HOST: 0.0.0.0
+      PORT: 3333
+      # Overrides `.env`: in a container Postgres is `db:5432`, not host 5433.
+      DATABASE_URL: "postgresql://${DB_USER:-meal_planner}:\
+        ${DB_PASSWORD:-meal_planner}@db:5432/\
+        ${DB_DATABASE:-meal_planner}?schema=public"
+    ports:
+      - '${API_PORT:-3333}:3333'
+    volumes:
+      - ./src:/app/apps/backend/src
+      - ./prisma:/app/apps/backend/prisma
+      - ./test:/app/apps/backend/test
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3333/health')\
+          .then(r=>process.exit(r.ok?0:1))\
+          .catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # Dev-only DB browser: `npm run pgadmin` → http://localhost:5050.
+  # Login with PGADMIN_EMAIL/PGADMIN_PASSWORD; the meal-planner server is
+  # pre-registered (host `db`), enter the Postgres password on first connect.
+  pgadmin:
+    image: dpage/pgadmin4:9.12
+    profiles: ['tools']
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      # .local fails pgadmin's email validation — use a real-looking TLD.
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-pgadmin@mealplanner.dev}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-pgadmin}
+    ports:
+      - '${PGADMIN_PORT:-5050}:80'
+    volumes:
+      - ./docker/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   dbdata:

@@ -1,0 +1,172 @@
+# Production stack for a single self-hosted machine. Always drive it with
+# `--env-file .env.production` (what `npm run prod:up` does): `env_file:` below
+# only fills container env, it does NOT feed `${...}` interpolation here.
+name: meal-planner-prod
+
+services:
+  db:
+    # Pinned to the exact minor; `18` would silently drift on `compose pull`.
+    image: postgres:18.6-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-meal_planner}
+      # No default on purpose: prod must fail fast without a real password.
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD is required}
+      POSTGRES_DB: ${DB_DATABASE:-meal_planner}
+    shm_size: '128mb'
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    volumes:
+      - prod-dbdata:/var/lib/postgresql
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-meal_planner}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  migrate:
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      target: migrate
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 256M
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      # Folded: the value is one long URL, the trailing backslashes join it.
+      DATABASE_URL: "postgresql://${DB_USER:-meal_planner}:\
+        ${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/\
+        ${DB_DATABASE:-meal_planner}?schema=public"
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: 'no'
+
+  api:
+    build:
+      context: ../..
+      dockerfile: apps/backend/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    # dist + node_modules are the only content; nothing needs to write to disk.
+    read_only: true
+    tmpfs:
+      - /tmp
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    env_file:
+      - path: .env.production
+        required: false
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3333
+      DATABASE_URL: "postgresql://${DB_USER:-meal_planner}:\
+        ${DB_PASSWORD:?DB_PASSWORD is required}@db:5432/\
+        ${DB_DATABASE:-meal_planner}?schema=public"
+    labels:
+      # Routing lives here, not in nginx-style files: Traefik watches docker.
+      - traefik.enable=true
+      - traefik.http.services.api.loadbalancer.server.port=3333
+      # DOMAIN: a real domain, or the server IP until one exists.
+      - 'traefik.http.routers.api.rule=Host(`${DOMAIN:?DOMAIN is required}`)'
+      # TLS mode (ACME_EMAIL set): HTTPS router + LE cert + :80 bounce.
+      - '${ACME_EMAIL:+traefik.http.routers.api.entrypoints=websecure}'
+      - '${ACME_EMAIL:+traefik.http.routers.api.tls.certresolver=letsencrypt}'
+      - "${ACME_EMAIL:+traefik.http.middlewares.redir.redirectscheme.scheme=\
+        https}"
+      - '${ACME_EMAIL:+traefik.http.routers.api-http.rule=Host(`${DOMAIN}`)}'
+      - '${ACME_EMAIL:+traefik.http.routers.api-http.entrypoints=web}'
+      - '${ACME_EMAIL:+traefik.http.routers.api-http.middlewares=redir}'
+      - '${ACME_EMAIL:+traefik.http.routers.api-http.service=api}'
+      # Plain-HTTP fallback (ACME_EMAIL empty): everything on :80.
+      - '${ACME_EMAIL:-traefik.http.routers.api.entrypoints=web}'
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:3333/health')\
+          .then(r=>process.exit(r.ok?0:1))\
+          .catch(()=>process.exit(1))"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+
+  # TLS terminator / router. Plain HTTP while ACME_EMAIL is empty; with it set,
+  # :443 gets a Let's Encrypt cert and :80 bounces to HTTPS.
+  proxy:
+    image: traefik:v3.5
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:80
+      - --entrypoints.websecure.address=:443
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge=true
+      - --certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web
+      - --certificatesresolvers.letsencrypt.acme.storage=/acme/acme.json
+      - --ping=true
+    ports:
+      # Configurable: something else may own 80/443 (local sim, or when another
+      # web server shares the VPS).
+      - '${PROXY_HTTP_PORT:-80}:80'
+      - '${PROXY_HTTPS_PORT:-443}:443'
+    volumes:
+      - acme:/acme
+      # Read-only: Traefik only reads container discovery data. Still root-level
+      # docker access — swap in a socket proxy if that ever feels too much.
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    deploy:
+      resources:
+        limits:
+          cpus: '0.25'
+          memory: 256M
+    logging:
+      driver: json-file
+      options:
+        max-size: '10m'
+        max-file: '3'
+    healthcheck:
+      test: ['CMD', 'traefik', 'healthcheck', '--ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  prod-dbdata:
+  acme:

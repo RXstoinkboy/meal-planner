@@ -1,0 +1,22 @@
+# Build context for apps/backend/Dockerfile is the repo root, so trim everything
+# the image never needs. Never drop apps/backend/prisma or apps/backend/docker.
+.git
+.github
+.pi
+docs
+**/*.md
+**/node_modules
+**/dist
+**/.turbo
+.turbo
+.vitest
+**/tmp
+apps/backend/postman
+apps/backend/coverage
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.production.example
+# npm ci needs mobile's manifest to validate the lockfile, nothing else.
+apps/mobile/*
+!apps/mobile/package.json

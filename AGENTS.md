@@ -48,7 +48,9 @@ After lifting a gate: bump the version, then `npx turbo run type-check lint` and
 │       │   └── features/<slice>/    # flat files: <slice>.controller.ts, per-process services, <slice>.schema.ts, <slice>.mapper.ts, <slice>.module.ts — big domains nest per-process dirs (auth: signup/, login/, account/), unit specs beside their subjects, e2e in test/
 │       ├── prisma/                  # schema.prisma + migrations (baseline)
 │       ├── test/                    # vitest: *.e2e.spec.ts, unit/, helpers.ts, setup-db.ts
-│       ├── docker-compose.yml       # PostgreSQL 18 (project name: meal-planner, host port 5433)
+│       ├── docker-compose.yml       # PostgreSQL 18 (project name: meal-planner, host port 5433) + opt-in api
+│       ├── docker-compose.prod.yml  # self-hosted prod: db + one-shot migrate + api
+│       ├── Dockerfile               # multi-stage, build context = repo root
 │       ├── prisma7.config.ts
 │       └── .env.example
 ├── package.json             # Root workspace config
@@ -81,8 +83,14 @@ npm run lint
 
 ```sh
 cd apps/backend
-npm run dev                # docker db + nest start --watch (http://localhost:3333)
+npm run dev                # run api + db as containers (bind-mount hot reload)
+npm run dev:logs           # tail api logs
+npm run dev:down           # stop the dev stack (db data survives — named volume)
+npm run dev:standalone     # host fallback: docker db + nest start --watch
+npm run pgadmin            # dev-only DB browser, http://localhost:5050
 npm run db                 # docker compose up -d db
+npm run prod:up            # docker-compose.prod.yml: migrate -> api via Traefik (needs .env.production)
+npm run prod:down
 npm run db:migrate         # prisma migrate dev (creates + applies)
 npm run db:deploy          # prisma migrate deploy (CI/production)
 npm run db:studio          # prisma studio
@@ -134,7 +142,7 @@ types). No registry, no committed openapi.json
 ## Key Conventions
 
 - Mobile imports alias: `@/` → `apps/mobile/` root.
-- Tamagui v3 with `onlyAllowShorthands: true` (from the `@tamagui/config/v6` pack): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Style values are **flat/bare**: no `$` sigils — `p="space-md"`, conditions as string clauses (`hover:`/`lg:`). The design system lives in `apps/mobile/tamagui.config.ts` and is documented in `docs/DESIGN.md`: palette tokens are the design's semantic set (`surface`, `on-surface-variant`, `primary-fixed`, …), the `light` theme supplies the component keys (`background` is the white control surface; the page uses the `surface` token), fonts are `display`/`heading`/`body`/`label`/`overline`, spacing aliases are `space-xs…xl`/`margin*`/`gutter*`, radius is the Tailwind ladder (`sm` 4, `lg` 8, `xl` 12, `2xl` 16, `3xl` 24, `full`), and elevation is `boxShadow="sm|md|header|dock|capture"`. Light-only until a dark palette exists. Never add a palette token named `background` (it shadows the theme key); use `surface`. If you add a `light_level2` theme, also add `<accent>_level2` variants — stock Button nests `Theme name="level2"`.
+- Tamagui v3 with `onlyAllowShorthands: true` (from the `@tamagui/config/v6` pack): use style **shorthands** — `grow`, `justify`, `items`, `p`, `bg` — longhands like `justifyContent` are omitted from the types. Style values are **flat/bare**: no `$` sigils — `p="space-md"`, conditions as string clauses (`hover:`/`lg:`). The design system lives in `apps/mobile/tamagui.config.ts` and is documented in `docs/DESIGN.md`: palette tokens are the design's semantic set (`surface`, `on-surface-variant`, `primary-fixed`, …), the `light` theme supplies the component keys (`background` is the white control surface; the page uses the `surface` token), fonts are `display`/`heading`/`body`/`label`/`overline`, spacing aliases are `space-xs…xl`/`margin*`/`gutter*`, radius is the Tailwind ladder (`sm` 4, `lg` 8, `xl` 12, `2xl` 16, `3xl` 24, `full`), and elevation is `boxShadow="sm|md|header|dock|capture"`. Light-only until a dark palette exists. Never add a palette token named `background` (it shadows the theme key); use `surface`. If you add a `light_level2` theme, also add `<accent>_level2` variants — stock Button nests `Theme name="level2"`. Typography primitives live in `components/typography.tsx` (`Display`, `Headline`, `Body`, `Label`, `Overline`) and are exported from `@/components`; use them instead of spelling `fontFamily`/`fontSize`/`lineHeight`/`letterSpacing`. Animations are platform-split (`animations.ts` = CSS driver on web, `animations.native.ts` = Reanimated on native); use `transition="quick"` (or a plain duration) with `hoverStyle`/`pressStyle`.
 - State split (mirrors fitly): Legend-State for persistent app state (`state/`), TanStack Query for server data (`queries/`), API calls only through TanStack Query.
 - Vertical slices are **lint-enforced** with `eslint-plugin-boundaries` (`boundaries/dependencies`) in both apps' flat ESLint configs — see `.pi/skills/vertical-slices/SKILL.md`. Both configs need `eslint-import-resolver-typescript` + the `import/resolver.typescript` setting: without it `@/features/*` and the `@/` alias resolve as external and every boundary rule silently no-ops.
 - Metro resolves packages hoisted to the repo root; `@tamagui/core`, `@tamagui/web`, `tamagui` are forced to a single copy at the workspace root (root `overrides` pin them together). Keep those in sync when bumping Tamagui.
@@ -155,6 +163,11 @@ types). No registry, no committed openapi.json
 ## Gotchas
 
 - The backend compose project is explicitly named `meal-planner` (folder name `backend` collides with other repos' compose projects) and publishes on host port **5433** — a local Supabase stack from another project already owns 5432. `DATABASE_URL` and `DB_PORT` must agree.
+- **Backend Docker**: the build context is the **repo root** (`docker build -f apps/backend/Dockerfile .`) because npm workspaces hoist to the root — `apps/backend` alone cannot `npm ci`. The Dockerfile copies every workspace `package.json` (npm validates the lockfile against all of them) and the `prisma/` dir *before* `npm ci`, because the workspace `postinstall` runs `prisma generate`. Stages: `development` (devDeps + bind mounts), `build`, `prod-deps`, `runtime` (non-root, `dist` only), `migrate` (devDeps, so the prisma CLI and its engines exist).
+- Inside a container `HOST` must be `0.0.0.0` (the default `localhost` is the container itself) and Postgres is `db:5432`, not the host's `localhost:5433`; both compose files set this explicitly, overriding `.env`. Everything shares the default compose network, so future sidecars (redis, prometheus) attach by service name.
+- The dev entrypoint re-runs `prisma generate` (the `src` bind mount hides the generated client) — restart the `api` service after changing `prisma/schema.prisma`. Prod secrets come only from `.env.production` (gitignored); nothing env-related is baked into an image. Always drive the prod stack with `--env-file .env.production` (`npm run prod:up` does) — `env_file:` feeds the containers but does **not** feed `${...}` interpolation, so `DOMAIN`/`DB_*` would silently come from the dev `.env` otherwise.
+- **Prod entry point is Traefik** (`proxy` service in `docker-compose.prod.yml`): the api publishes no port; routing is container labels — `traefik.http.routers.api.*` — not a config file. `ACME_EMAIL` set = TLS mode (LE HTTP-01, needs a real domain; empty = plain HTTP). `${VAR:+...}`/`${VAR:-...}` interpolation in labels/commands switches the modes — note `${VAR:+x}` leaves an empty `""` list item when `VAR` is unset (harmless for labels, would break `command:` args). Traefik label fields are lowercase, and the router field is `entrypoints` (plural). Mounting `/var/run/docker.sock:ro` gives Traefik root-equivalent docker access — swap in a socket proxy if that ever matters. Local prod-sim on this machine must set `PROXY_HTTP_PORT=8080` — Apache already owns host :80.
+- Both compose stacks carry `no-new-privileges` and CPU/memory limits; prod also runs api `read_only` (tmpfs `/tmp`), rotates json-file logs (10m × 3) and hard-fails without `DB_PASSWORD` (`${DB_PASSWORD:?...}`). Postgres data lives in named volumes (`meal-planner_dbdata` / `meal-planner-prod_prod-dbdata`) — `compose down` keeps it, `down -v` wipes it.
 - `apps/backend/src/generated/prisma` is gitignored and produced by `postinstall` (`prisma generate`). Never edit it; re-run `npm install` (or `npx prisma generate`) after changing `prisma/schema.prisma`.
 - Prisma reads connection config from `prisma7.config.ts`, not from the datasource block. `npx prisma` resolves the workspace-local 7.10.0 — never let it fall back to the registry `latest` (an 8.0.0-rc).
 - Adding a backend slice = `src/features/<name>/` with flat files — `<name>.controller.ts`, one `<process>.service.ts` per process, `<name>.schema.ts` (request), `<name>.mapper.ts` (response) — plus a module + an entry in `app.module.ts`. Paths document themselves: request via `@Body({ schema })`, responses via `@Api*Response({ schema: asSwaggerSchema(zodSchema) })`, auth via `@ApiSecurity('bearer')`. Every handler also needs `@Public()` or `@Can.Anyone()`/`@Can(...)` — the authorization guard denies undeclared handlers. No ESLint change needed. Boundaries element patterns must be **folders** — a file pattern in `boundaries/elements` is silently ignored (the plugin warns in debug mode).

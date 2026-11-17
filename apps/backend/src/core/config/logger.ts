@@ -4,8 +4,11 @@ import type { Params } from 'nestjs-pino'
 import { env, isProduction, isTest } from '@/core/config/env'
 
 // pino resolves transport targets from its own directory, and pino-pretty is not
-// hoisted to the workspace root — resolve it from this module instead.
-const pinoPrettyTarget = createRequire(__filename).resolve('pino-pretty')
+// hoisted to the workspace root — resolve it from this module instead. Lazy: it is
+// a devDependency, and production images install without it.
+function resolvePinoPrettyTarget() {
+  return createRequire(__filename).resolve('pino-pretty')
+}
 
 /** Structured logs everywhere; pretty-printed in development only. */
 export function loggerOptions(): Params['pinoHttp'] {
@@ -16,7 +19,7 @@ export function loggerOptions(): Params['pinoHttp'] {
     redact: { paths: ['req.headers.authorization', 'req.headers.cookie'], remove: true },
     transport: isDevelopment
       ? {
-          target: pinoPrettyTarget,
+          target: resolvePinoPrettyTarget(),
           options: { singleLine: true, translateTime: 'SYS:HH:MM:ss' },
         }
       : undefined,
