@@ -6,7 +6,7 @@ import { StatusBar } from "expo-status-bar";
 import { TamaguiProvider } from "tamagui";
 import { createAsyncStoragePersister } from "@tanstack/query-async-storage-persister";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as SplashScreen from "expo-splash-screen";
+import { hideAsync, preventAutoHideAsync } from "expo-splash-screen";
 import { useFonts } from "expo-font";
 import { Epilogue_600SemiBold } from "@expo-google-fonts/epilogue/600SemiBold";
 import { Epilogue_700Bold } from "@expo-google-fonts/epilogue/700Bold";
@@ -32,7 +32,7 @@ const APP_FONT_LOAD_MAP = {
 };
 
 // keep the splash up until fonts resolve; a failure must not strand it
-SplashScreen.preventAutoHideAsync().catch(() => {});
+preventAutoHideAsync().catch(() => {});
 
 function RootLayout() {
 	const [fontsLoaded, fontError] = useFonts(APP_FONT_LOAD_MAP);
@@ -46,7 +46,7 @@ function RootLayout() {
 			console.warn("[fonts] falling back to system fonts", fontError);
 		}
 		if (fontsLoaded || fontError) {
-			SplashScreen.hideAsync().catch(() => {});
+			hideAsync().catch(() => {});
 		}
 	}, [fontsLoaded, fontError]);
 
